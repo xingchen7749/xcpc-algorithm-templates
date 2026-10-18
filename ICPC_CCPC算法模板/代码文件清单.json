@@ -34,6 +34,8 @@
   "03_图论与树/3.11 最小费用流：逐次最短增广路.cpp",
   "03_图论与树/3.12.1 点差分（TreePointDiff）.cpp",
   "03_图论与树/3.12.2 边差分（TreeEdgeDiff）.cpp",
+  "03_图论与树/3.13.1 点权前缀和（TreePointPrefix）.cpp",
+  "03_图论与树/3.13.2 边权前缀和（TreeEdgePrefix）.cpp",
   "04_字符串/4.1 前缀函数与 KMP 匹配.cpp",
   "04_字符串/4.2 Z 函数.cpp",
   "04_字符串/4.3 Manacher：奇偶回文半径.cpp",

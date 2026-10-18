@@ -2042,6 +2042,85 @@ public:
     'TreeEdgeDiff tree(g); tree.add(u,v,2); auto ans=tree.result(); ans[x] 为父节点到 x 的边的累计增量。对于根为 1 的链 1—2—3，add(1,3,2) 的结果为 {0,0,2,2}。',
     section='树上差分')
 
+add('图论与树',
+    'tree_point_prefix',
+    '点权前缀和（TreePointPrefix）',
+    '输入非空连通无向树 g[1..n] 和点权 a[1..n]，默认根为 1，查询任意两点路径上的点权和，包含两端及 LCA。',
+    '预处理 O(n)，单次查询 O(log n)，空间 O(n)。',
+    'pre[u] 保存根到 u 的点权和。令 p=lca(u,v)，答案为 pre[u]+pre[v]-2*pre[p]+a[p]。支持负权；权值改变后需重新构造。所有中间结果须在 i64 范围内。',
+    r'''
+// 依赖手册 {{section:hld}} 的 HLD（树链剖分、LCA 与子树区间），独立文件已展开。
+class TreePointPrefix {
+private:
+    HLD h;
+    vector<i64> a; // a[u]：点 u 的权值，a[0] 不参与计算。
+    vector<i64> pre; // pre[u]：根到 u 的点权和，包含根和 u。
+
+public:
+    // 用树 g[1..n]、点权 a[1..n] 和有效根 root 构造静态前缀和；时间 O(n)。
+    // 要求 g 为非空连通无向树，a 与 g 大小相同；迭代处理，不使用递归。
+    TreePointPrefix(const vector<vector<int>>& g, const vector<i64>& a, int root = 1)
+        : h(g, root), a(a), pre(g.size(), 0) {
+        assert(a.size() == g.size());
+        pre[root] = a[root];
+        for (int i = 2; i <= h.n; ++i) {
+            int u = h.rev[i];
+            pre[u] = pre[h.father[u]] + a[u];
+        }
+    }
+
+    // 返回 u 到 v 的点权和，包含两端；u==v 时返回 a[u]，时间 O(log n)。
+    i64 query(int u, int v) {
+        assert(1 <= u && u <= h.n && 1 <= v && v <= h.n);
+        int p = h.lca(u, v);
+        return pre[u] + pre[v] - 2 * pre[p] + a[p];
+    }
+};
+''',
+    'TreePointPrefix tree(g,a); cout << tree.query(u,v) << endl; 对于链 1—2—3，a={0,2,-1,4}，query(1,3)=5，query(2,2)=-1。',
+    section='树上前缀和',
+    intro=r'''
+树上前缀和用于静态路径求和，分别提供点权与边权两个类，统一使用 query(u,v)。两版复用手册 {{section:hld}} 的 HLD 求 LCA，独立文件已展开依赖。与批量路径加、最后还原的树上差分不同，前缀和构造后不支持直接修改权值。
+
+''')
+
+add('图论与树',
+    'tree_edge_prefix',
+    '边权前缀和（TreeEdgePrefix）',
+    '输入非空连通无向树 g[1..n] 和父边权 a[1..n]，默认根为 1。a[u] 为指定根下父节点到 u 的边权，根的 a 值忽略；查询任意两点路径上的边权和。',
+    '预处理 O(n)，单次查询 O(log n)，空间 O(n)。',
+    'pre[root]=0；令 p=lca(u,v)，答案为 pre[u]+pre[v]-2*pre[p]。支持负权，u==v 时为 0。a 必须与 root 的父子方向一致，换根时需重新分配父边权；权值改变后需重新构造。所有中间结果须在 i64 范围内。',
+    r'''
+// 依赖手册 {{section:hld}} 的 HLD（树链剖分、LCA 与子树区间），独立文件已展开。
+class TreeEdgePrefix {
+private:
+    HLD h;
+    vector<i64> pre; // pre[u]：根到 u 的边权和，根及 pre[0] 为 0。
+
+public:
+    // 用树 g[1..n] 和父边权 a[1..n] 构造静态前缀和；时间 O(n)，不使用递归。
+    // 要求 g 为非空连通无向树，1<=root<=n，a 与 g 大小相同。
+    // a[u] 是以 root 为根时父节点到 u 的边权；a[root] 和 a[0] 忽略。
+    TreeEdgePrefix(const vector<vector<int>>& g, const vector<i64>& a, int root = 1)
+        : h(g, root), pre(g.size(), 0) {
+        assert(a.size() == g.size());
+        for (int i = 2; i <= h.n; ++i) {
+            int u = h.rev[i];
+            pre[u] = pre[h.father[u]] + a[u];
+        }
+    }
+
+    // 返回 u 到 v 的边权和；u==v 时返回 0，时间 O(log n)。
+    i64 query(int u, int v) {
+        assert(1 <= u && u <= h.n && 1 <= v && v <= h.n);
+        int p = h.lca(u, v);
+        return pre[u] + pre[v] - 2 * pre[p];
+    }
+};
+''',
+    'TreeEdgePrefix tree(g,a,root); cout << tree.query(u,v) << endl; 输入边 (u,v,w) 可先用 HLD h(g,root) 确定父子关系，再令 a[h.dep[u]>h.dep[v]?u:v]=w。对于根为 1 的链 1—2—3，边权依次为 5、-2，a={0,0,5,-2}，query(1,3)=3，query(2,2)=0。',
+    section='树上前缀和')
+
 add('字符串',
     'kmp',
     '前缀函数与 KMP 匹配',

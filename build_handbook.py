@@ -42,6 +42,8 @@ DEPS = {
     'virtual': [('hld', ['HLD'])],
     'tree_point_diff': [('hld', ['HLD'])],
     'tree_edge_diff': [('hld', ['HLD'])],
+    'tree_point_prefix': [('hld', ['HLD'])],
+    'tree_edge_prefix': [('hld', ['HLD'])],
     'crt': [('modular', ['exgcd'])],
     'factor': [('primality', ['u128', 'mul', 'pw', 'is_prime'])],
     'bounded': [('knapsack', ['zero_one'])],

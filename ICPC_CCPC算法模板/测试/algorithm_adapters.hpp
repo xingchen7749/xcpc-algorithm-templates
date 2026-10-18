@@ -1624,6 +1624,67 @@ public:
 };
 }
 
+namespace cp_tree_point_prefix {
+using cp_hld::HLD;
+// 依赖手册 3.7 的 HLD（树链剖分、LCA 与子树区间），独立文件已展开。
+class TreePointPrefix {
+private:
+    HLD h;
+    vector<i64> a; // a[u]：点 u 的权值，a[0] 不参与计算。
+    vector<i64> pre; // pre[u]：根到 u 的点权和，包含根和 u。
+
+public:
+    // 用树 g[1..n]、点权 a[1..n] 和有效根 root 构造静态前缀和；时间 O(n)。
+    // 要求 g 为非空连通无向树，a 与 g 大小相同；迭代处理，不使用递归。
+    TreePointPrefix(const vector<vector<int>>& g, const vector<i64>& a, int root = 1)
+        : h(g, root), a(a), pre(g.size(), 0) {
+        assert(a.size() == g.size());
+        pre[root] = a[root];
+        for (int i = 2; i <= h.n; ++i) {
+            int u = h.rev[i];
+            pre[u] = pre[h.father[u]] + a[u];
+        }
+    }
+
+    // 返回 u 到 v 的点权和，包含两端；u==v 时返回 a[u]，时间 O(log n)。
+    i64 query(int u, int v) {
+        assert(1 <= u && u <= h.n && 1 <= v && v <= h.n);
+        int p = h.lca(u, v);
+        return pre[u] + pre[v] - 2 * pre[p] + a[p];
+    }
+};
+}
+
+namespace cp_tree_edge_prefix {
+using cp_hld::HLD;
+// 依赖手册 3.7 的 HLD（树链剖分、LCA 与子树区间），独立文件已展开。
+class TreeEdgePrefix {
+private:
+    HLD h;
+    vector<i64> pre; // pre[u]：根到 u 的边权和，根及 pre[0] 为 0。
+
+public:
+    // 用树 g[1..n] 和父边权 a[1..n] 构造静态前缀和；时间 O(n)，不使用递归。
+    // 要求 g 为非空连通无向树，1<=root<=n，a 与 g 大小相同。
+    // a[u] 是以 root 为根时父节点到 u 的边权；a[root] 和 a[0] 忽略。
+    TreeEdgePrefix(const vector<vector<int>>& g, const vector<i64>& a, int root = 1)
+        : h(g, root), pre(g.size(), 0) {
+        assert(a.size() == g.size());
+        for (int i = 2; i <= h.n; ++i) {
+            int u = h.rev[i];
+            pre[u] = pre[h.father[u]] + a[u];
+        }
+    }
+
+    // 返回 u 到 v 的边权和；u==v 时返回 0，时间 O(log n)。
+    i64 query(int u, int v) {
+        assert(1 <= u && u <= h.n && 1 <= v && v <= h.n);
+        int p = h.lca(u, v);
+        return pre[u] + pre[v] - 2 * pre[p];
+    }
+};
+}
+
 namespace cp_kmp {
 // 返回前缀函数 pi，pi[i] 是 s[0..i] 的最长真前缀与后缀的公共长度。
 // 字符串和返回数组均为 0 下标，空串返回空数组；时间和空间 O(|s|)。
