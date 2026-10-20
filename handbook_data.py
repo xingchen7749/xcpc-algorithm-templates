@@ -89,7 +89,7 @@ int rank_of(const vector<T>& xs, T x) {
 
 add('基础与技巧',
     'prefix',
-    '前缀和',
+    '一维前缀和',
     '输入数组 a[1..n]，构造 pre[0]=0 的前缀和数组；闭区间 [l,r] 的和为 pre[r]-pre[l-1]，适合静态区间求和。',
     '构造时间和空间 O(n)，单次区间求和 O(1)。',
     '输入数组至少包含占位 a[0]，其值不参与计算。要求 1≤l≤r≤n；原数组修改后前缀和不会自动更新，累加及区间和必须在 i64 范围内。',
@@ -104,11 +104,50 @@ vector<i64> prefix_sum(const vector<i64>& a) {
     return pre; // sum[l,r] = pre[r]-pre[l-1]
 }
 ''',
-    'auto pre = prefix_sum({0,1,2,3}); 得到 {0,1,3,6}；区间 [2,3] 的和为 pre[3]-pre[1]=5。')
+    'auto pre = prefix_sum({0,1,2,3}); 得到 {0,1,3,6}；区间 [2,3] 的和为 pre[3]-pre[1]=5。',
+    section='前缀和')
+
+add('基础与技巧',
+    'prefix_2d',
+    '二维前缀和',
+    '输入矩形数组 a[1..n][1..m]，构造二维前缀和，通过 query 查询闭矩形 [x1,x2] × [y1,y2] 的元素和；x 表示行，y 表示列。',
+    '构造时间和空间 O(nm)，单次矩形求和 O(1)。',
+    '要求 n,m≥1，输入包含第 0 行和第 0 列占位，其值不参与计算。查询矩形非空且下标有效；修改原数组后需要重新构造 pre。所有中间结果必须在 i64 范围内。',
+    r'''
+// 由矩形数组 a[1..n][1..m] 构造二维前缀和，要求 n,m>=1。
+// 忽略第 0 行和第 0 列，不修改 a；返回 pre，时间和空间均为 O(nm)。
+vector<vector<i64>> prefix_sum(const vector<vector<i64>>& a) {
+    assert(a.size() >= 2 && a[0].size() >= 2);
+    int n = (int)a.size() - 1;
+    int m = (int)a[0].size() - 1;
+    // pre[i][j]：矩形 [1,i] × [1,j] 的元素和，第 0 行和第 0 列为 0。
+    vector<vector<i64>> pre(n + 1, vector<i64>(m + 1));
+    for (int i = 1; i <= n; ++i) {
+        assert((int)a[i].size() == m + 1);
+        for (int j = 1; j <= m; ++j) {
+            pre[i][j] = pre[i - 1][j] + pre[i][j - 1]
+                      - pre[i - 1][j - 1] + a[i][j];
+        }
+    }
+    return pre;
+}
+
+// 返回闭矩形 [x1,x2] × [y1,y2] 的元素和，x 为行，y 为列。
+// pre 由 prefix_sum 构造；要求矩形非空且下标有效，时间 O(1)。
+i64 query(const vector<vector<i64>>& pre,
+          int x1, int y1, int x2, int y2) {
+    assert(1 <= x1 && x1 <= x2 && x2 < (int)pre.size());
+    assert(1 <= y1 && y1 <= y2 && y2 < (int)pre[0].size());
+    return pre[x2][y2] - pre[x1 - 1][y2]
+         - pre[x2][y1 - 1] + pre[x1 - 1][y1 - 1];
+}
+''',
+    'vector<vector<i64>> a = {{0,0,0,0},{0,1,2,3},{0,4,5,6}}; auto pre = prefix_sum(a); query(pre,1,2,2,3) 返回 16。',
+    section='前缀和')
 
 add('基础与技巧',
     'difference',
-    '差分',
+    '一维差分',
     '输入数组 a[1..n]，构造差分数组 diff；通过 range_add 记录闭区间 [l,r] 加 v，所有操作结束后调用 restore 还原。适合批量区间加、最后统一取值。',
     '初始化与还原各 O(n)，单次区间加 O(1)，空间 O(n)。',
     'diff 必须保留 n+2 项，容纳 r+1；最后一项为边界标记，不属于原数组。a[0] 的值不参与计算。差分及累加结果必须在 i64 范围内；还原不会修改 diff。',
@@ -143,7 +182,68 @@ vector<i64> restore(const vector<i64>& diff) {
     return a;
 }
 ''',
-    'auto diff = difference({0,1,2,3}); range_add(diff,2,3,5); auto a = restore(diff); 得到 {0,1,7,8}。初始数组全零时，可直接使用 vector<i64> diff(n+2)。')
+    'auto diff = difference({0,1,2,3}); range_add(diff,2,3,5); auto a = restore(diff); 得到 {0,1,7,8}。初始数组全零时，可直接使用 vector<i64> diff(n+2)。',
+    section='差分')
+
+add('基础与技巧',
+    'difference_2d',
+    '二维差分',
+    '输入矩形数组 a[1..n][1..m]，通过 range_add 记录闭矩形 [x1,x2] × [y1,y2] 加 v，所有操作结束后调用 restore 还原；x 表示行，y 表示列。',
+    '构造和还原各 O(nm)，单次矩形加 O(1)，空间 O(nm)。',
+    '要求 n,m≥1，diff 分配 (n+2) × (m+2)，额外一行、一列容纳更新边界。输入第 0 行和第 0 列的值不参与计算。还原不修改 diff，可继续更新；所有中间结果必须在 i64 范围内。',
+    r'''
+// 由矩形数组 a[1..n][1..m] 构造二维差分，要求 n,m>=1。
+// 忽略第 0 行和第 0 列，不修改 a；返回 diff，时间和空间均为 O(nm)。
+vector<vector<i64>> difference(const vector<vector<i64>>& a) {
+    assert(a.size() >= 2 && a[0].size() >= 2);
+    int n = (int)a.size() - 1;
+    int m = (int)a[0].size() - 1;
+    // diff：二维差分数组；第 n+1 行、第 m+1 列用于更新边界标记。
+    vector<vector<i64>> diff(n + 2, vector<i64>(m + 2));
+    for (int i = 1; i <= n; ++i) {
+        assert((int)a[i].size() == m + 1);
+        for (int j = 1; j <= m; ++j) {
+            diff[i][j] = a[i][j];
+            if (i > 1) diff[i][j] -= a[i - 1][j];
+            if (j > 1) diff[i][j] -= a[i][j - 1];
+            if (i > 1 && j > 1) {
+                diff[i][j] += a[i - 1][j - 1];
+            }
+        }
+    }
+    return diff;
+}
+
+// 在 diff 上记录闭矩形 [x1,x2] × [y1,y2] 的元素加 v，无返回值。
+// diff 由 difference 构造；要求矩形非空且下标有效，时间 O(1)。
+void range_add(vector<vector<i64>>& diff,
+               int x1, int y1, int x2, int y2, i64 v) {
+    assert(1 <= x1 && x1 <= x2 && x2 < (int)diff.size() - 1);
+    assert(1 <= y1 && y1 <= y2 && y2 < (int)diff[0].size() - 1);
+    diff[x1][y1] += v;
+    diff[x2 + 1][y1] -= v;
+    diff[x1][y2 + 1] -= v;
+    diff[x2 + 1][y2 + 1] += v;
+}
+
+// 将 difference 构造的 diff 还原为 a[1..n][1..m]，第 0 行、第 0 列为 0。
+// 不修改 diff，允许继续更新后再次还原；返回 a，时间和空间均为 O(nm)。
+vector<vector<i64>> restore(const vector<vector<i64>>& diff) {
+    assert(diff.size() >= 3 && diff[0].size() >= 3);
+    int n = (int)diff.size() - 2;
+    int m = (int)diff[0].size() - 2;
+    vector<vector<i64>> a(n + 1, vector<i64>(m + 1));
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 1; j <= m; ++j) {
+            a[i][j] = a[i - 1][j] + a[i][j - 1]
+                    - a[i - 1][j - 1] + diff[i][j];
+        }
+    }
+    return a;
+}
+''',
+    'vector<vector<i64>> a = {{0,0,0,0},{0,1,2,3},{0,4,5,6}}; auto diff = difference(a); range_add(diff,1,2,2,3,10); a = restore(diff); 两行分别为 {1,12,13}、{4,15,16}。初始矩阵全零时可直接分配 vector<vector<i64>> diff(n+2,vector<i64>(m+2))。',
+    section='差分')
 
 add('基础与技巧',
     'window',
