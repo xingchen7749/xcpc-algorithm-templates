@@ -75,7 +75,7 @@ int main() {
 with tempfile.TemporaryDirectory(prefix='matrix_check_') as directory:
     tmp = Path(directory)
     bodies = []
-    for index, name in enumerate(('1.4.2 二维前缀和.cpp', '1.5.2 二维差分.cpp')):
+    for index, name in enumerate(('1.5.2 二维前缀和.cpp', '1.6.2 二维差分.cpp')):
         source = ROOT / '代码/01_基础与技巧' / name
         subprocess.run(['g++', '-std=c++17', '-O2', '-Wall', '-Wextra',
                         str(source), '-o', str(tmp / f'standalone{index}.exe')], check=True)

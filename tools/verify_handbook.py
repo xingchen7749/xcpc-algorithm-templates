@@ -67,6 +67,6 @@ def snapshot():
 if __name__ == '__main__':
     check()
     before = snapshot()
-    subprocess.run([sys.executable, str(ROOT/'build_handbook.py')], check=True)
+    subprocess.run([sys.executable, str(ROOT/'tools/build_handbook.py')], check=True)
     assert snapshot() == before, 'regeneration changed file contents or file set'
     print('Regeneration is stable.')

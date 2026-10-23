@@ -78,8 +78,8 @@ int main() {
 with tempfile.TemporaryDirectory(prefix='tree_prefix_') as tmp:
     tmp = Path(tmp)
     bodies = []
-    for index, name in enumerate(('3.13.1 点权前缀和（TreePointPrefix）.cpp',
-                                  '3.13.2 边权前缀和（TreeEdgePrefix）.cpp')):
+    for index, name in enumerate(('3.8.1 点权前缀和（TreePointPrefix）.cpp',
+                                  '3.8.2 边权前缀和（TreeEdgePrefix）.cpp')):
         source = ROOT / '代码/03_图论与树' / name
         subprocess.run(['g++', '-std=c++17', '-O2', str(source), '-o', str(tmp / f'standalone{index}.exe')], check=True)
         body = source.read_text(encoding='utf-8').split('void solve()')[0]

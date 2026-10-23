@@ -6,7 +6,7 @@ import json
 import re
 from handbook_data import ENTRIES, HELPERS
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'ICPC_CCPC算法模板'
 BY_KEY = {e['key']: e for e in ENTRIES}
 STARTER = BY_KEY['starter']['code']
@@ -181,7 +181,7 @@ def remove_obsolete(expected):
     manifest = OUT/'代码文件清单.json'
     previous = json.loads(manifest.read_text(encoding='utf-8')) if manifest.exists() else []
     # One-time migration list is explicit; never enumerate arbitrary files for deletion.
-    legacy = ROOT/'legacy_code_paths.json'
+    legacy = ROOT/'tools/legacy_code_paths.json'
     if legacy.exists():
         previous += json.loads(legacy.read_text(encoding='utf-8'))
     for relative in set(previous) - set(expected):
@@ -218,7 +218,7 @@ def main():
         full.append(header+'\n'+content)
         chapter_text = header+'\n## 本章算法目录\n\n'+contents(i,sections)+'\n'+content
         (OUT/'章节'/f'{i:02d}_{chapter}.md').write_text(render_code_links(chapter_text,'../',chapter=chapter),encoding='utf-8')
-    full.append((ROOT/'appendix.md').read_text(encoding='utf-8'))
+    full.append((ROOT/'tools/appendix.md').read_text(encoding='utf-8'))
     (OUT/'算法模板手册.md').write_text(render_code_links('\n'.join(full)),encoding='utf-8')
     for key, path in CODE_PATHS.items():
         dest = OUT/'代码'/path

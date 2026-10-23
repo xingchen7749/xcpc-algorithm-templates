@@ -61,6 +61,43 @@ i64 first_true(i64 l, i64 r, Pred ok) {
     '有序数组 arr[1..n]：first_true(0, n + 1, [&](i64 mid) { return arr[mid] >= x; }) 返回第一个 >=x 的位置，不存在返回 n+1。答案二分：first_true(-1, 11, [](i64 x) { return x*x >= 30; }) 在候选 [0,10] 中返回 6。')
 
 add('基础与技巧',
+    'quick_sort',
+    '快速排序',
+    '将整数数组 a 的闭区间 [l,r] 原地按升序排序；数组采用 1 下标，a[0] 占位。排序整个数组调用 quick_sort(a,1,n)。',
+    '平均时间 O(n log n)，最坏 O(n²)；递归栈平均 O(log n)，最坏 O(n)。',
+    '非稳定排序。固定选择中间位置的元素作为基准，特殊构造可能退化；保存基准值，不能引用交换过程中会改变的数组元素。递归区间为 [l,j] 和 [j+1,r]。l>=r 时直接返回，允许用 [1,0] 表示空数组。其他算法的排序继续使用标准库 sort。',
+    r'''
+// 将 a[l..r] 原地按升序排序，无返回值；调用时保证区间下标合法。
+// 数组采用 1 下标，a[0] 占位；l>=r 时不操作。
+// 平均时间 O(n log n)，最坏 O(n²)；递归栈平均 O(log n)，最坏 O(n)。
+void quick_sort(vector<int>& a, int l, int r) {
+    if (l >= r) return;
+
+    int i = l - 1, j = r + 1;
+    int pivot = a[l + (r - l) / 2];  // 保存基准值，避免交换后基准改变。
+
+    while (i < j) {
+        do {
+            i++;
+        } while (a[i] < pivot);
+
+        do {
+            j--;
+        } while (a[j] > pivot);
+
+        if (i < j) {
+            swap(a[i], a[j]);
+        }
+    }
+
+    // 分区后，左区间元素不大于基准，右区间元素不小于基准。
+    quick_sort(a, l, j);
+    quick_sort(a, j + 1, r);
+}
+''',
+    'vector<int> a = {0,3,1,2,1}; quick_sort(a,1,4); 得到 {0,1,1,2,3}。也可只排序合法子区间，区间外元素保持不变。')
+
+add('基础与技巧',
     'compress',
     '离散化',
     '输入数组 a[1..n]，排序去重得到 xs[1..m]，将原数值映射为从 1 开始的秩；不修改原数组。',
@@ -520,6 +557,133 @@ public:
 ''')
 
 add('数据结构',
+    'segtree',
+    '无懒标记线段树（SegTree）',
+    '输入 a[1..n]，a[0] 占位，n≥1。支持单点赋值、单点加和闭区间求和；单点下标要求 1≤pos≤n，查询要求 1≤l≤r≤n。',
+    '建树 O(n)，每次操作 O(log n)，空间 O(n)。',
+    '所有类型统一 int，需要时在标准头文件之后、类定义之前添加 #define int long long。构造函数和公开接口包含 assert 检查，定义 NDEBUG 后禁用。没有懒标记，add(pos,v) 只修改一个元素。',
+    r'''
+class SegTree {
+private:
+    int n;
+    vector<int> tree; // 区间和
+
+    // 合并两个区间的结果：参数 a、b 为各自区间和，返回合并后的和
+    int merge(int a, int b) { return a + b; }
+
+    // 向上合并：通过 merge 用两个子节点的结果更新节点 p
+    void pushup(int p) {
+        tree[p] = merge(tree[p * 2], tree[p * 2 + 1]);
+    }
+
+    // 建树：节点 p 管理闭区间 [l,r]
+    void build(const vector<int>& a, int p, int l, int r) {
+        if (l == r) {
+            tree[p] = a[l];
+            return;
+        }
+        int m = (l + r) / 2;
+        build(a, p * 2, l, m);
+        build(a, p * 2 + 1, m + 1, r);
+        pushup(p);
+    }
+
+    // 单点赋值的递归实现：将 a[pos] 改为 v
+    void set(int p, int l, int r, int pos, int v) {
+        if (l == r) {
+            tree[p] = v;
+            return;
+        }
+        int m = (l + r) / 2;
+        if (pos <= m) {
+            set(p * 2, l, m, pos, v);
+        }
+        else {
+            set(p * 2 + 1, m + 1, r, pos, v);
+        }
+        pushup(p);
+    }
+
+    // 单点加的递归实现：将 a[pos] 增加 v，再向上更新区间和
+    void add(int p, int l, int r, int pos, int v) {
+        if (l == r) {
+            tree[p] += v;
+            return;
+        }
+        int m = (l + r) / 2;
+        if (pos <= m) {
+            add(p * 2, l, m, pos, v);
+        }
+        else {
+            add(p * 2 + 1, m + 1, r, pos, v);
+        }
+        pushup(p);
+    }
+
+    // 区间求和的递归实现：完全覆盖直接返回，否则累加子区间答案
+    int query(int p, int l, int r, int ql, int qr) {
+        if (ql <= l && r <= qr) return tree[p];
+        int m = (l + r) / 2;
+        int sum = 0;
+        if (ql <= m) {
+            sum = merge(sum, query(p * 2, l, m, ql, qr));
+        }
+        if (qr > m) {
+            sum = merge(sum, query(p * 2 + 1, m + 1, r, ql, qr));
+        }
+        return sum;
+    }
+
+public:
+    // 构造函数：a[0] 占位，要求 n >= 1，建树 O(n)
+    SegTree(const vector<int>& a) {
+        assert(a.size() >= 2); // 至少包含占位和一个有效元素
+        n = (int)a.size() - 1;
+        tree.assign(4 * n + 5, 0);
+        build(a, 1, 1, n);
+    }
+
+    // 单点赋值：a[pos] = v，要求 1 <= pos <= n，O(log n)
+    void set(int pos, int v) {
+        assert(1 <= pos && pos <= n);
+        set(1, 1, n, pos, v);
+    }
+
+    // 单点加：a[pos] += v，要求 1 <= pos <= n，O(log n)
+    void add(int pos, int v) {
+        assert(1 <= pos && pos <= n);
+        add(1, 1, n, pos, v);
+    }
+
+    // 区间求和：返回 [l,r] 的和，要求 1 <= l <= r <= n，O(log n)
+    int query(int l, int r) {
+        assert(1 <= l && l <= r && r <= n);
+        return query(1, 1, n, l, r);
+    }
+};
+''',
+    'SegTree s({0,1,2,3}); s.add(2,4); s.set(3,10); s.query(1,3) 返回 17。',
+    section='线段树',
+    after=r'''
+#### 改为区间最大值或最小值
+
+
+以本节的求和代码为起点，最大值和最小值版本分别按下表修改；应在建树前改好代码，再重新构造线段树。
+
+| 修改位置 | 区间和（当前） | 区间最大值 | 区间最小值 |
+|---|---|---|---|
+| merge 的返回值 | return a + b | return max(a,b) | return min(a,b) |
+| 内部 query 的初始答案 | int sum = 0 | int sum = numeric_limits<int>::lowest() | int sum = numeric_limits<int>::max() |
+| pushup 与 query 的合并调用 | merge(a,b) | 保持不变 | 保持不变 |
+
+pushup 和 query 已统一调用 merge，合并调用不用改；只需改 merge 的返回值和 query 的初始答案。变量 sum 可重命名为 ans。不能将最大值查询的初始答案设为 0，因为元素可能全为负数。numeric_limits<int> 会随 #define int long long 使用对应类型的边界。
+
+只需修改 merge 的返回值和内部 query 的初始答案。pushup、build、set、单点 add、构造函数和公开接口不变。
+
+
+''')
+
+add('数据结构',
     'lazyseg',
     '带懒标记线段树（segmenttree）',
     '输入 a[1..n]，a[0] 占位，n≥1。内外均为闭区间，要求 1≤l≤r≤n。支持区间加、单点赋值、区间求和。',
@@ -704,133 +868,6 @@ build、单点 set、构造函数和公开接口不变。懒标记始终记录�
 | 使用场景 | 需要区间加 | 只需要单点修改，代码更简单 |
 
 两版建树 O(n)、空间 O(n)，各自提供的修改和查询均为 O(log n)。segmenttree 可以用 add(pos,pos,v) 实现单点加；SegTree 若循环进行 k 次单点加，需 O(k log n)，不能当成高效区间加。
-
-
-''')
-
-add('数据结构',
-    'segtree',
-    '无懒标记线段树（SegTree）',
-    '输入 a[1..n]，a[0] 占位，n≥1。支持单点赋值、单点加和闭区间求和；单点下标要求 1≤pos≤n，查询要求 1≤l≤r≤n。',
-    '建树 O(n)，每次操作 O(log n)，空间 O(n)。',
-    '所有类型统一 int，需要时在标准头文件之后、类定义之前添加 #define int long long。构造函数和公开接口包含 assert 检查，定义 NDEBUG 后禁用。没有懒标记，add(pos,v) 只修改一个元素。',
-    r'''
-class SegTree {
-private:
-    int n;
-    vector<int> tree; // 区间和
-
-    // 合并两个区间的结果：参数 a、b 为各自区间和，返回合并后的和
-    int merge(int a, int b) { return a + b; }
-
-    // 向上合并：通过 merge 用两个子节点的结果更新节点 p
-    void pushup(int p) {
-        tree[p] = merge(tree[p * 2], tree[p * 2 + 1]);
-    }
-
-    // 建树：节点 p 管理闭区间 [l,r]
-    void build(const vector<int>& a, int p, int l, int r) {
-        if (l == r) {
-            tree[p] = a[l];
-            return;
-        }
-        int m = (l + r) / 2;
-        build(a, p * 2, l, m);
-        build(a, p * 2 + 1, m + 1, r);
-        pushup(p);
-    }
-
-    // 单点赋值的递归实现：将 a[pos] 改为 v
-    void set(int p, int l, int r, int pos, int v) {
-        if (l == r) {
-            tree[p] = v;
-            return;
-        }
-        int m = (l + r) / 2;
-        if (pos <= m) {
-            set(p * 2, l, m, pos, v);
-        }
-        else {
-            set(p * 2 + 1, m + 1, r, pos, v);
-        }
-        pushup(p);
-    }
-
-    // 单点加的递归实现：将 a[pos] 增加 v，再向上更新区间和
-    void add(int p, int l, int r, int pos, int v) {
-        if (l == r) {
-            tree[p] += v;
-            return;
-        }
-        int m = (l + r) / 2;
-        if (pos <= m) {
-            add(p * 2, l, m, pos, v);
-        }
-        else {
-            add(p * 2 + 1, m + 1, r, pos, v);
-        }
-        pushup(p);
-    }
-
-    // 区间求和的递归实现：完全覆盖直接返回，否则累加子区间答案
-    int query(int p, int l, int r, int ql, int qr) {
-        if (ql <= l && r <= qr) return tree[p];
-        int m = (l + r) / 2;
-        int sum = 0;
-        if (ql <= m) {
-            sum = merge(sum, query(p * 2, l, m, ql, qr));
-        }
-        if (qr > m) {
-            sum = merge(sum, query(p * 2 + 1, m + 1, r, ql, qr));
-        }
-        return sum;
-    }
-
-public:
-    // 构造函数：a[0] 占位，要求 n >= 1，建树 O(n)
-    SegTree(const vector<int>& a) {
-        assert(a.size() >= 2); // 至少包含占位和一个有效元素
-        n = (int)a.size() - 1;
-        tree.assign(4 * n + 5, 0);
-        build(a, 1, 1, n);
-    }
-
-    // 单点赋值：a[pos] = v，要求 1 <= pos <= n，O(log n)
-    void set(int pos, int v) {
-        assert(1 <= pos && pos <= n);
-        set(1, 1, n, pos, v);
-    }
-
-    // 单点加：a[pos] += v，要求 1 <= pos <= n，O(log n)
-    void add(int pos, int v) {
-        assert(1 <= pos && pos <= n);
-        add(1, 1, n, pos, v);
-    }
-
-    // 区间求和：返回 [l,r] 的和，要求 1 <= l <= r <= n，O(log n)
-    int query(int l, int r) {
-        assert(1 <= l && l <= r && r <= n);
-        return query(1, 1, n, l, r);
-    }
-};
-''',
-    'SegTree s({0,1,2,3}); s.add(2,4); s.set(3,10); s.query(1,3) 返回 17。',
-    section='线段树',
-    after=r'''
-#### 改为区间最大值或最小值
-
-
-以本节的求和代码为起点，最大值和最小值版本分别按下表修改；应在建树前改好代码，再重新构造线段树。
-
-| 修改位置 | 区间和（当前） | 区间最大值 | 区间最小值 |
-|---|---|---|---|
-| merge 的返回值 | return a + b | return max(a,b) | return min(a,b) |
-| 内部 query 的初始答案 | int sum = 0 | int sum = numeric_limits<int>::lowest() | int sum = numeric_limits<int>::max() |
-| pushup 与 query 的合并调用 | merge(a,b) | 保持不变 | 保持不变 |
-
-pushup 和 query 已统一调用 merge，合并调用不用改；只需改 merge 的返回值和 query 的初始答案。变量 sum 可重命名为 ans。不能将最大值查询的初始答案设为 0，因为元素可能全为负数。numeric_limits<int> 会随 #define int long long 使用对应类型的边界。
-
-只需修改 merge 的返回值和内部 query 的初始答案。pushup、build、set、单点 add、构造函数和公开接口不变。
 
 
 ''')
@@ -1101,43 +1138,6 @@ struct ImplicitTreap {
 };
 ''',
     '依次 append(1),append(2),append(3)，reverse(1,2) 后 values() 为 {0,2,1,3}。')
-
-add('基础与技巧',
-    'quick_sort',
-    '快速排序',
-    '将整数数组 a 的闭区间 [l,r] 原地按升序排序；数组采用 1 下标，a[0] 占位。排序整个数组调用 quick_sort(a,1,n)。',
-    '平均时间 O(n log n)，最坏 O(n²)；递归栈平均 O(log n)，最坏 O(n)。',
-    '非稳定排序。固定选择中间位置的元素作为基准，特殊构造可能退化；保存基准值，不能引用交换过程中会改变的数组元素。递归区间为 [l,j] 和 [j+1,r]。l>=r 时直接返回，允许用 [1,0] 表示空数组。其他算法的排序继续使用标准库 sort。',
-    r'''
-// 将 a[l..r] 原地按升序排序，无返回值；调用时保证区间下标合法。
-// 数组采用 1 下标，a[0] 占位；l>=r 时不操作。
-// 平均时间 O(n log n)，最坏 O(n²)；递归栈平均 O(log n)，最坏 O(n)。
-void quick_sort(vector<int>& a, int l, int r) {
-    if (l >= r) return;
-
-    int i = l - 1, j = r + 1;
-    int pivot = a[l + (r - l) / 2];  // 保存基准值，避免交换后基准改变。
-
-    while (i < j) {
-        do {
-            i++;
-        } while (a[i] < pivot);
-
-        do {
-            j--;
-        } while (a[j] > pivot);
-
-        if (i < j) {
-            swap(a[i], a[j]);
-        }
-    }
-
-    // 分区后，左区间元素不大于基准，右区间元素不小于基准。
-    quick_sort(a, l, j);
-    quick_sort(a, j + 1, r);
-}
-''',
-    'vector<int> a = {0,3,1,2,1}; quick_sort(a,1,4); 得到 {0,1,1,2,3}。也可只排序合法子区间，区间外元素保持不变。')
 
 add('数据结构',
     'binary_trie',
@@ -1800,6 +1800,178 @@ struct HLD {
     '先令 base[h.pos[u]]=weight[u]，用 base 建线段树。h.path(u,v,[&](int l,int r){ ans+=seg.query(l,r); }); 边权放在较深端点时，最后一段要排除 LCA。')
 
 add('图论与树',
+    'tree_point_prefix',
+    '点权前缀和（TreePointPrefix）',
+    '输入非空连通无向树 g[1..n] 和点权 a[1..n]，默认根为 1，查询任意两点路径上的点权和，包含两端及 LCA。',
+    '预处理 O(n)，单次查询 O(log n)，空间 O(n)。',
+    'pre[u] 保存根到 u 的点权和。令 p=lca(u,v)，答案为 pre[u]+pre[v]-2*pre[p]+a[p]。支持负权；权值改变后需重新构造。所有中间结果须在 i64 范围内。',
+    r'''
+// 依赖手册 {{section:hld}} 的 HLD（树链剖分、LCA 与子树区间），独立文件已展开。
+class TreePointPrefix {
+private:
+    HLD h;
+    vector<i64> a; // a[u]：点 u 的权值，a[0] 不参与计算。
+    vector<i64> pre; // pre[u]：根到 u 的点权和，包含根和 u。
+
+public:
+    // 用树 g[1..n]、点权 a[1..n] 和有效根 root 构造静态前缀和；时间 O(n)。
+    // 要求 g 为非空连通无向树，a 与 g 大小相同；迭代处理，不使用递归。
+    TreePointPrefix(const vector<vector<int>>& g, const vector<i64>& a, int root = 1)
+        : h(g, root), a(a), pre(g.size(), 0) {
+        assert(a.size() == g.size());
+        pre[root] = a[root];
+        for (int i = 2; i <= h.n; ++i) {
+            int u = h.rev[i];
+            pre[u] = pre[h.father[u]] + a[u];
+        }
+    }
+
+    // 返回 u 到 v 的点权和，包含两端；u==v 时返回 a[u]，时间 O(log n)。
+    i64 query(int u, int v) {
+        assert(1 <= u && u <= h.n && 1 <= v && v <= h.n);
+        int p = h.lca(u, v);
+        return pre[u] + pre[v] - 2 * pre[p] + a[p];
+    }
+};
+''',
+    'TreePointPrefix tree(g,a); cout << tree.query(u,v) << endl; 对于链 1—2—3，a={0,2,-1,4}，query(1,3)=5，query(2,2)=-1。',
+    section='树上前缀和',
+    intro=r'''
+树上前缀和用于静态路径求和，分别提供点权与边权两个类，统一使用 query(u,v)。两版复用手册 {{section:hld}} 的 HLD 求 LCA，独立文件已展开依赖。与批量路径加、最后还原的树上差分不同，前缀和构造后不支持直接修改权值。
+
+''')
+
+add('图论与树',
+    'tree_edge_prefix',
+    '边权前缀和（TreeEdgePrefix）',
+    '输入非空连通无向树 g[1..n] 和父边权 a[1..n]，默认根为 1。a[u] 为指定根下父节点到 u 的边权，根的 a 值忽略；查询任意两点路径上的边权和。',
+    '预处理 O(n)，单次查询 O(log n)，空间 O(n)。',
+    'pre[root]=0；令 p=lca(u,v)，答案为 pre[u]+pre[v]-2*pre[p]。支持负权，u==v 时为 0。a 必须与 root 的父子方向一致，换根时需重新分配父边权；权值改变后需重新构造。所有中间结果须在 i64 范围内。',
+    r'''
+// 依赖手册 {{section:hld}} 的 HLD（树链剖分、LCA 与子树区间），独立文件已展开。
+class TreeEdgePrefix {
+private:
+    HLD h;
+    vector<i64> pre; // pre[u]：根到 u 的边权和，根及 pre[0] 为 0。
+
+public:
+    // 用树 g[1..n] 和父边权 a[1..n] 构造静态前缀和；时间 O(n)，不使用递归。
+    // 要求 g 为非空连通无向树，1<=root<=n，a 与 g 大小相同。
+    // a[u] 是以 root 为根时父节点到 u 的边权；a[root] 和 a[0] 忽略。
+    TreeEdgePrefix(const vector<vector<int>>& g, const vector<i64>& a, int root = 1)
+        : h(g, root), pre(g.size(), 0) {
+        assert(a.size() == g.size());
+        for (int i = 2; i <= h.n; ++i) {
+            int u = h.rev[i];
+            pre[u] = pre[h.father[u]] + a[u];
+        }
+    }
+
+    // 返回 u 到 v 的边权和；u==v 时返回 0，时间 O(log n)。
+    i64 query(int u, int v) {
+        assert(1 <= u && u <= h.n && 1 <= v && v <= h.n);
+        int p = h.lca(u, v);
+        return pre[u] + pre[v] - 2 * pre[p];
+    }
+};
+''',
+    'TreeEdgePrefix tree(g,a,root); cout << tree.query(u,v) << endl; 输入边 (u,v,w) 可先用 HLD h(g,root) 确定父子关系，再令 a[h.dep[u]>h.dep[v]?u:v]=w。对于根为 1 的链 1—2—3，边权依次为 5、-2，a={0,0,5,-2}，query(1,3)=3，query(2,2)=0。',
+    section='树上前缀和')
+
+add('图论与树',
+    'tree_point_diff',
+    '点差分（TreePointDiff）',
+    '输入非空连通无向树 g[1..n]，默认根为 1。批量给路径上的点加值，最后统一还原各点累计增量；包含路径两端和 LCA。',
+    '借助树链剖分求 LCA：预处理 O(n)，单次路径加 O(log n)，还原 O(n)，空间 O(n)。',
+    '令 p=lca(u,v)，两端各加 val，p 和 p 的父亲各减 val；p 为根时不减父亲。现有 HLD 将根的父亲设为根，必须特别判断。所有中间结果需在 i64 范围内；若有初始权值，在结果上另行相加。',
+    r'''
+// 依赖手册 {{section:hld}} 的 HLD（树链剖分、LCA 与子树区间），独立文件已展开。
+class TreePointDiff {
+private:
+    HLD h;
+    vector<i64> diff;
+
+public:
+    // 为非空连通无向树 g[1..n] 初始化点差分，根为 root，初始增量全为 0。
+    // 要求 1<=root<=n；使用迭代预处理，时间和空间 O(n)。
+    TreePointDiff(const vector<vector<int>>& g, int root = 1) : h(g, root), diff(g.size(), 0) {}
+
+    // 将 u 到 v 路径上的所有点加 val，包含两端；时间 O(log n)。
+    void add(int u, int v, i64 val) {
+        assert(1 <= u && u <= h.n && 1 <= v && v <= h.n);
+        int p = h.lca(u, v);
+        diff[u] += val;
+        diff[v] += val;
+        diff[p] -= val;
+        if (h.father[p] != p) {
+            diff[h.father[p]] -= val;
+        }
+    }
+
+    // 返回各点累计增量 ans[1..n]，ans[0]=0；时间和空间 O(n)。
+    // 按 dfs 序逆序向父亲累加，不修改 diff，可重复调用并继续添加操作。
+    vector<i64> result() const {
+        vector<i64> ans = diff;
+        for (int i = h.n; i > 1; --i) {
+            int u = h.rev[i];
+            ans[h.father[u]] += ans[u];
+        }
+        return ans;
+    }
+};
+''',
+    'TreePointDiff tree(g); tree.add(u,v,3); auto ans=tree.result(); ans[x] 为点 x 的累计增量。u==v 时仅该点增加。',
+    section='树上差分',
+    intro=r'''
+点差分与边差分分别提供独立类和独立代码文件，统一使用 add(u,v,val) 和 result()。两版复用手册 {{section:hld}} 的 HLD 求 LCA，独立文件均已展开依赖。适合批量路径加后统一取值，不适合每次修改后立即高效查询。
+
+''')
+
+add('图论与树',
+    'tree_edge_diff',
+    '边差分（TreeEdgeDiff）',
+    '输入非空连通无向树 g[1..n]，默认根为 1。批量给路径上的边加值，结果 ans[u] 对应父节点到 u 的边；根没有父边，其结果为 0。',
+    '预处理 O(n)，单次路径加 O(log n)，还原 O(n)，空间 O(n)。',
+    '令 p=lca(u,v)，两端各加 val，p 减两次 val。u==v 时不修改任何边。边的结果放在较深端点，按输入边 (u,v) 输出时选择深度较大的端点。所有中间结果需在 i64 范围内；初始边权在结果上另行相加。',
+    r'''
+// 依赖手册 {{section:hld}} 的 HLD（树链剖分、LCA 与子树区间），独立文件已展开。
+class TreeEdgeDiff {
+private:
+    HLD h;
+    vector<i64> diff;
+
+public:
+    // 为非空连通无向树 g[1..n] 初始化边差分，根为 root，初始增量全为 0。
+    // 要求 1<=root<=n；使用迭代预处理，时间和空间 O(n)。
+    TreeEdgeDiff(const vector<vector<int>>& g, int root = 1) : h(g, root), diff(g.size(), 0) {}
+
+    // 将 u 到 v 路径上的所有边加 val；u==v 时无边被修改，时间 O(log n)。
+    void add(int u, int v, i64 val) {
+        assert(1 <= u && u <= h.n && 1 <= v && v <= h.n);
+        int p = h.lca(u, v);
+        diff[u] += val;
+        diff[v] += val;
+        diff[p] -= val;
+        diff[p] -= val;
+    }
+
+    // 返回各边累计增量，ans[u] 对应父节点到 u 的边，根及 ans[0] 为 0。
+    // 逆序向父亲累加，不修改 diff，可重复调用并继续更新；时间和空间 O(n)。
+    vector<i64> result() const {
+        vector<i64> ans = diff;
+        for (int i = h.n; i > 1; --i) {
+            int u = h.rev[i];
+            ans[h.father[u]] += ans[u];
+        }
+        ans[h.rev[1]] = 0;
+        return ans;
+    }
+};
+''',
+    'TreeEdgeDiff tree(g); tree.add(u,v,2); auto ans=tree.result(); ans[x] 为父节点到 x 的边的累计增量。对于根为 1 的链 1—2—3，add(1,3,2) 的结果为 {0,0,2,2}。',
+    section='树上差分')
+
+add('图论与树',
     'virtual',
     '虚树：关键点及其 LCA',
     '依赖 HLD。将关键点按 dfs 序排列，加入相邻点 LCA 后建虚树。返回 {父节点,子节点} 边，编号仍是原树编号。 keys、nodes 和 edges 是无占位的列表（容器位置从 0 开始）；其中保存的原树顶点编号为 1..n。',
@@ -2049,178 +2221,6 @@ struct MinCostFlow {
 ''',
     'auto [f,c]=net.flow(s,t,need); 需要恰好 need 单位流时必须检查 f==need。最大费用问题可在无负环条件满足时对费用取反。')
 
-add('图论与树',
-    'tree_point_diff',
-    '点差分（TreePointDiff）',
-    '输入非空连通无向树 g[1..n]，默认根为 1。批量给路径上的点加值，最后统一还原各点累计增量；包含路径两端和 LCA。',
-    '借助树链剖分求 LCA：预处理 O(n)，单次路径加 O(log n)，还原 O(n)，空间 O(n)。',
-    '令 p=lca(u,v)，两端各加 val，p 和 p 的父亲各减 val；p 为根时不减父亲。现有 HLD 将根的父亲设为根，必须特别判断。所有中间结果需在 i64 范围内；若有初始权值，在结果上另行相加。',
-    r'''
-// 依赖手册 {{section:hld}} 的 HLD（树链剖分、LCA 与子树区间），独立文件已展开。
-class TreePointDiff {
-private:
-    HLD h;
-    vector<i64> diff;
-
-public:
-    // 为非空连通无向树 g[1..n] 初始化点差分，根为 root，初始增量全为 0。
-    // 要求 1<=root<=n；使用迭代预处理，时间和空间 O(n)。
-    TreePointDiff(const vector<vector<int>>& g, int root = 1) : h(g, root), diff(g.size(), 0) {}
-
-    // 将 u 到 v 路径上的所有点加 val，包含两端；时间 O(log n)。
-    void add(int u, int v, i64 val) {
-        assert(1 <= u && u <= h.n && 1 <= v && v <= h.n);
-        int p = h.lca(u, v);
-        diff[u] += val;
-        diff[v] += val;
-        diff[p] -= val;
-        if (h.father[p] != p) {
-            diff[h.father[p]] -= val;
-        }
-    }
-
-    // 返回各点累计增量 ans[1..n]，ans[0]=0；时间和空间 O(n)。
-    // 按 dfs 序逆序向父亲累加，不修改 diff，可重复调用并继续添加操作。
-    vector<i64> result() const {
-        vector<i64> ans = diff;
-        for (int i = h.n; i > 1; --i) {
-            int u = h.rev[i];
-            ans[h.father[u]] += ans[u];
-        }
-        return ans;
-    }
-};
-''',
-    'TreePointDiff tree(g); tree.add(u,v,3); auto ans=tree.result(); ans[x] 为点 x 的累计增量。u==v 时仅该点增加。',
-    section='树上差分',
-    intro=r'''
-点差分与边差分分别提供独立类和独立代码文件，统一使用 add(u,v,val) 和 result()。两版复用手册 {{section:hld}} 的 HLD 求 LCA，独立文件均已展开依赖。适合批量路径加后统一取值，不适合每次修改后立即高效查询。
-
-''')
-
-add('图论与树',
-    'tree_edge_diff',
-    '边差分（TreeEdgeDiff）',
-    '输入非空连通无向树 g[1..n]，默认根为 1。批量给路径上的边加值，结果 ans[u] 对应父节点到 u 的边；根没有父边，其结果为 0。',
-    '预处理 O(n)，单次路径加 O(log n)，还原 O(n)，空间 O(n)。',
-    '令 p=lca(u,v)，两端各加 val，p 减两次 val。u==v 时不修改任何边。边的结果放在较深端点，按输入边 (u,v) 输出时选择深度较大的端点。所有中间结果需在 i64 范围内；初始边权在结果上另行相加。',
-    r'''
-// 依赖手册 {{section:hld}} 的 HLD（树链剖分、LCA 与子树区间），独立文件已展开。
-class TreeEdgeDiff {
-private:
-    HLD h;
-    vector<i64> diff;
-
-public:
-    // 为非空连通无向树 g[1..n] 初始化边差分，根为 root，初始增量全为 0。
-    // 要求 1<=root<=n；使用迭代预处理，时间和空间 O(n)。
-    TreeEdgeDiff(const vector<vector<int>>& g, int root = 1) : h(g, root), diff(g.size(), 0) {}
-
-    // 将 u 到 v 路径上的所有边加 val；u==v 时无边被修改，时间 O(log n)。
-    void add(int u, int v, i64 val) {
-        assert(1 <= u && u <= h.n && 1 <= v && v <= h.n);
-        int p = h.lca(u, v);
-        diff[u] += val;
-        diff[v] += val;
-        diff[p] -= val;
-        diff[p] -= val;
-    }
-
-    // 返回各边累计增量，ans[u] 对应父节点到 u 的边，根及 ans[0] 为 0。
-    // 逆序向父亲累加，不修改 diff，可重复调用并继续更新；时间和空间 O(n)。
-    vector<i64> result() const {
-        vector<i64> ans = diff;
-        for (int i = h.n; i > 1; --i) {
-            int u = h.rev[i];
-            ans[h.father[u]] += ans[u];
-        }
-        ans[h.rev[1]] = 0;
-        return ans;
-    }
-};
-''',
-    'TreeEdgeDiff tree(g); tree.add(u,v,2); auto ans=tree.result(); ans[x] 为父节点到 x 的边的累计增量。对于根为 1 的链 1—2—3，add(1,3,2) 的结果为 {0,0,2,2}。',
-    section='树上差分')
-
-add('图论与树',
-    'tree_point_prefix',
-    '点权前缀和（TreePointPrefix）',
-    '输入非空连通无向树 g[1..n] 和点权 a[1..n]，默认根为 1，查询任意两点路径上的点权和，包含两端及 LCA。',
-    '预处理 O(n)，单次查询 O(log n)，空间 O(n)。',
-    'pre[u] 保存根到 u 的点权和。令 p=lca(u,v)，答案为 pre[u]+pre[v]-2*pre[p]+a[p]。支持负权；权值改变后需重新构造。所有中间结果须在 i64 范围内。',
-    r'''
-// 依赖手册 {{section:hld}} 的 HLD（树链剖分、LCA 与子树区间），独立文件已展开。
-class TreePointPrefix {
-private:
-    HLD h;
-    vector<i64> a; // a[u]：点 u 的权值，a[0] 不参与计算。
-    vector<i64> pre; // pre[u]：根到 u 的点权和，包含根和 u。
-
-public:
-    // 用树 g[1..n]、点权 a[1..n] 和有效根 root 构造静态前缀和；时间 O(n)。
-    // 要求 g 为非空连通无向树，a 与 g 大小相同；迭代处理，不使用递归。
-    TreePointPrefix(const vector<vector<int>>& g, const vector<i64>& a, int root = 1)
-        : h(g, root), a(a), pre(g.size(), 0) {
-        assert(a.size() == g.size());
-        pre[root] = a[root];
-        for (int i = 2; i <= h.n; ++i) {
-            int u = h.rev[i];
-            pre[u] = pre[h.father[u]] + a[u];
-        }
-    }
-
-    // 返回 u 到 v 的点权和，包含两端；u==v 时返回 a[u]，时间 O(log n)。
-    i64 query(int u, int v) {
-        assert(1 <= u && u <= h.n && 1 <= v && v <= h.n);
-        int p = h.lca(u, v);
-        return pre[u] + pre[v] - 2 * pre[p] + a[p];
-    }
-};
-''',
-    'TreePointPrefix tree(g,a); cout << tree.query(u,v) << endl; 对于链 1—2—3，a={0,2,-1,4}，query(1,3)=5，query(2,2)=-1。',
-    section='树上前缀和',
-    intro=r'''
-树上前缀和用于静态路径求和，分别提供点权与边权两个类，统一使用 query(u,v)。两版复用手册 {{section:hld}} 的 HLD 求 LCA，独立文件已展开依赖。与批量路径加、最后还原的树上差分不同，前缀和构造后不支持直接修改权值。
-
-''')
-
-add('图论与树',
-    'tree_edge_prefix',
-    '边权前缀和（TreeEdgePrefix）',
-    '输入非空连通无向树 g[1..n] 和父边权 a[1..n]，默认根为 1。a[u] 为指定根下父节点到 u 的边权，根的 a 值忽略；查询任意两点路径上的边权和。',
-    '预处理 O(n)，单次查询 O(log n)，空间 O(n)。',
-    'pre[root]=0；令 p=lca(u,v)，答案为 pre[u]+pre[v]-2*pre[p]。支持负权，u==v 时为 0。a 必须与 root 的父子方向一致，换根时需重新分配父边权；权值改变后需重新构造。所有中间结果须在 i64 范围内。',
-    r'''
-// 依赖手册 {{section:hld}} 的 HLD（树链剖分、LCA 与子树区间），独立文件已展开。
-class TreeEdgePrefix {
-private:
-    HLD h;
-    vector<i64> pre; // pre[u]：根到 u 的边权和，根及 pre[0] 为 0。
-
-public:
-    // 用树 g[1..n] 和父边权 a[1..n] 构造静态前缀和；时间 O(n)，不使用递归。
-    // 要求 g 为非空连通无向树，1<=root<=n，a 与 g 大小相同。
-    // a[u] 是以 root 为根时父节点到 u 的边权；a[root] 和 a[0] 忽略。
-    TreeEdgePrefix(const vector<vector<int>>& g, const vector<i64>& a, int root = 1)
-        : h(g, root), pre(g.size(), 0) {
-        assert(a.size() == g.size());
-        for (int i = 2; i <= h.n; ++i) {
-            int u = h.rev[i];
-            pre[u] = pre[h.father[u]] + a[u];
-        }
-    }
-
-    // 返回 u 到 v 的边权和；u==v 时返回 0，时间 O(log n)。
-    i64 query(int u, int v) {
-        assert(1 <= u && u <= h.n && 1 <= v && v <= h.n);
-        int p = h.lca(u, v);
-        return pre[u] + pre[v] - 2 * pre[p];
-    }
-};
-''',
-    'TreeEdgePrefix tree(g,a,root); cout << tree.query(u,v) << endl; 输入边 (u,v,w) 可先用 HLD h(g,root) 确定父子关系，再令 a[h.dep[u]>h.dep[v]?u:v]=w。对于根为 1 的链 1—2—3，边权依次为 5、-2，a={0,0,5,-2}，query(1,3)=3，query(2,2)=0。',
-    section='树上前缀和')
-
 add('字符串',
     'kmp',
     '前缀函数与 KMP 匹配',
@@ -2375,6 +2375,80 @@ struct StringHash {
 };
 ''',
     'StringHash h("abcabc"); h.get(0,3)==h.get(3,6)。')
+
+add('字符串',
+    'trie',
+    '普通字典树',
+    '维护小写字母 a-z 组成的字符串，支持插入、查询完整单词次数和前缀次数，允许重复插入。字符串使用 0 下标；节点从 1 开始，根节点为 1。',
+    '插入、单词查询和前缀查询均为 O(|s|)；总空间 O(26(L+1))，L 为插入字符串的总长度。',
+    'end 统计完整单词，cnt 统计前缀，均包含重复串。支持空串：count(空串) 返回空串插入次数，prefix_count(空串) 返回全部字符串数量。仅接受 a-z；计数使用 int，插入总数不能超过其范围。',
+    r'''
+// Trie（名称源自 retrieval）：字典树。
+class Trie {
+private:
+    struct Node {
+        int ch[26] = {};  // 各字符对应的子节点，0 表示不存在
+        int cnt = 0;     // 以当前路径为前缀的字符串数量，包含重复串
+        int end = 0;     // 在当前节点结束的字符串数量
+    };
+
+    vector<Node> tr;  // tr[0] 占位，tr[1] 为根节点
+
+    // 查找字符串 s 对应的节点；路径不存在时返回 0。
+    int find(const string &s) const {
+        int u = 1;
+        for (char c : s) {
+            assert('a' <= c && c <= 'z');
+            int v = c - 'a';
+            if (tr[u].ch[v] == 0) return 0;
+            u = tr[u].ch[v];
+        }
+        return u;
+    }
+
+public:
+    // 建立空字典树。
+    Trie() : tr(2) {}
+
+    // 清空所有字符串，恢复根节点。
+    void clear() {
+        tr.assign(2, Node{});
+    }
+
+    // 插入字符串 s，允许重复插入，时间复杂度 O(|s|)。
+    void insert(const string &s) {
+        int u = 1;
+        tr[u].cnt++;
+        for (char c : s) {
+            assert('a' <= c && c <= 'z');
+            int v = c - 'a';
+            if (tr[u].ch[v] == 0) {
+                int id = (int)tr.size();
+                tr.emplace_back();
+                tr[u].ch[v] = id;
+            }
+            u = tr[u].ch[v];
+            tr[u].cnt++;
+        }
+        tr[u].end++;
+    }
+
+    // 返回完整字符串 s 的出现次数，不存在时返回 0。
+    // 时间复杂度 O(|s|)。
+    int count(const string &s) const {
+        int u = find(s);
+        return u == 0 ? 0 : tr[u].end;
+    }
+
+    // 返回以 s 为前缀的字符串数量，包含重复串。
+    // 时间复杂度 O(|s|)；空前缀返回所有字符串的数量。
+    int prefix_count(const string &s) const {
+        int u = find(s);
+        return u == 0 ? 0 : tr[u].cnt;
+    }
+};
+''',
+    'Trie trie; 依次 insert("apple")、insert("apple")、insert("app") 后，count("apple")==2、count("ap")==0、prefix_count("app")==3；clear() 清空后可重新插入。')
 
 add('字符串',
     'aho',
@@ -3058,6 +3132,69 @@ vector<int> convolution(vector<int> a, vector<int> b) {
     'convolution({1,2},{3,4}) 返回 {3,10,8}。')
 
 add('数学',
+    'fft',
+    'FFT：实系数卷积',
+    '使用复数蝶形计算实系数多项式卷积，适合误差可控的数值卷积。 例外：多项式系数按次数从 0 编号，不添加占位。',
+    '时间 O(L log L)，空间 O(L)。',
+    '浮点误差与长度和系数规模有关。整数答案用 llround 前必须确认误差足够小；大整数精确卷积应使用 NTT 多模数方案。',
+    r'''
+using cd = complex<double>;
+// 对复数数组 a 原地做 FFT；inv=false 为正变换，true 为逆变换并除以长度。
+// 要求长度为正二次幂；浮点计算存在误差，时间 O(n log n)。
+// FFT（Fast Fourier Transform）：快速傅里叶变换。
+// cd（complex double）：复数类型别名；inv（inverse）：是否执行逆变换。
+void fft(vector<cd>& a, bool inv) {
+    int n = a.size();
+    assert(n > 0 && (n & (n - 1)) == 0);
+    for (int i = 1, j = 0; i < n; ++i) {
+        int bit = n >> 1;
+        for (; j & bit; bit >>= 1) {
+            j ^= bit;
+        }
+        j ^= bit;
+        if (i < j) swap(a[i], a[j]);
+    }
+    const double PI = acos(-1.0);
+    for (int len = 2; len <= n; len <<= 1) {
+        cd step = polar(1.0, 2 * PI / len * (inv ? -1 : 1));
+        for (int i = 0; i < n; i += len) {
+            cd w = 1;
+            for (int j = 0; j < len / 2; ++j) {
+                cd u = a[i + j], v = a[i + j + len / 2] * w;
+                a[i + j] = u + v;
+                a[i + j + len / 2] = u - v;
+                w *= step;
+            }
+        }
+    }
+    if (inv) {
+        for (cd& x : a) x /= n;
+    }
+}
+// 返回实系数多项式 a、b 的近似卷积，系数按次数从 0 编号；空输入返回空数组。
+// 输出长度 |a|+|b|-1，不修改输入；变换长度 L 下时间 O(L log L)、空间 O(L)。
+// 用于整数卷积时须先验证误差再舍入，不能直接当作精确大整数卷积。
+vector<double> convolution(const vector<double>& a, const vector<double>& b) {
+    if (a.empty() || b.empty()) return {};
+    int need = a.size() + b.size() - 1, n = 1;
+    while (n < need) n <<= 1;
+    vector<cd> x(n), y(n);
+    copy(a.begin(), a.end(), x.begin());
+    copy(b.begin(), b.end(), y.begin());
+    fft(x, false);
+    fft(y, false);
+    for (int i = 0; i < n; ++i) {
+        x[i] *= y[i];
+    }
+    fft(x, true);
+    vector<double> ans(need);
+    for (int i = 0; i < need; ++i) ans[i] = x[i].real();
+    return ans;
+}
+''',
+    'convolution({1.0,2.0},{3.0,4.0}) 近似返回 {3,10,8}。')
+
+add('数学',
     'gauss',
     '高斯消元：实数线性方程组',
     '输入增广矩阵 a[1..n][1..m+1]，第 m+1 列为常数项；第 0 行、第 0 列占位。返回 0 无解、1 唯一解、2 无穷多解；解向量 x[1..m]，自由变量设为 0。',
@@ -3208,69 +3345,6 @@ i64 linear_nth(const vector<i64>& init, const vector<i64>& c, u64 n, i64 mod) {
 }
 ''',
     'linear_nth({0,1},{1,1},10,1000000007)==55。')
-
-add('数学',
-    'fft',
-    'FFT：实系数卷积',
-    '使用复数蝶形计算实系数多项式卷积，适合误差可控的数值卷积。 例外：多项式系数按次数从 0 编号，不添加占位。',
-    '时间 O(L log L)，空间 O(L)。',
-    '浮点误差与长度和系数规模有关。整数答案用 llround 前必须确认误差足够小；大整数精确卷积应使用 NTT 多模数方案。',
-    r'''
-using cd = complex<double>;
-// 对复数数组 a 原地做 FFT；inv=false 为正变换，true 为逆变换并除以长度。
-// 要求长度为正二次幂；浮点计算存在误差，时间 O(n log n)。
-// FFT（Fast Fourier Transform）：快速傅里叶变换。
-// cd（complex double）：复数类型别名；inv（inverse）：是否执行逆变换。
-void fft(vector<cd>& a, bool inv) {
-    int n = a.size();
-    assert(n > 0 && (n & (n - 1)) == 0);
-    for (int i = 1, j = 0; i < n; ++i) {
-        int bit = n >> 1;
-        for (; j & bit; bit >>= 1) {
-            j ^= bit;
-        }
-        j ^= bit;
-        if (i < j) swap(a[i], a[j]);
-    }
-    const double PI = acos(-1.0);
-    for (int len = 2; len <= n; len <<= 1) {
-        cd step = polar(1.0, 2 * PI / len * (inv ? -1 : 1));
-        for (int i = 0; i < n; i += len) {
-            cd w = 1;
-            for (int j = 0; j < len / 2; ++j) {
-                cd u = a[i + j], v = a[i + j + len / 2] * w;
-                a[i + j] = u + v;
-                a[i + j + len / 2] = u - v;
-                w *= step;
-            }
-        }
-    }
-    if (inv) {
-        for (cd& x : a) x /= n;
-    }
-}
-// 返回实系数多项式 a、b 的近似卷积，系数按次数从 0 编号；空输入返回空数组。
-// 输出长度 |a|+|b|-1，不修改输入；变换长度 L 下时间 O(L log L)、空间 O(L)。
-// 用于整数卷积时须先验证误差再舍入，不能直接当作精确大整数卷积。
-vector<double> convolution(const vector<double>& a, const vector<double>& b) {
-    if (a.empty() || b.empty()) return {};
-    int need = a.size() + b.size() - 1, n = 1;
-    while (n < need) n <<= 1;
-    vector<cd> x(n), y(n);
-    copy(a.begin(), a.end(), x.begin());
-    copy(b.begin(), b.end(), y.begin());
-    fft(x, false);
-    fft(y, false);
-    for (int i = 0; i < n; ++i) {
-        x[i] *= y[i];
-    }
-    fft(x, true);
-    vector<double> ans(need);
-    for (int i = 0; i < need; ++i) ans[i] = x[i].real();
-    return ans;
-}
-''',
-    'convolution({1.0,2.0},{3.0,4.0}) 近似返回 {3,10,8}。')
 
 add('数学',
     'games',
