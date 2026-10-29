@@ -11,7 +11,7 @@ from markdown_it import MarkdownIt
 import typst
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / 'ICPC_CCPC算法模板' / '算法模板手册.md'
+SOURCE = ROOT / 'RBC_XCPC_算法模板' / 'RBC_XCPC_算法模板.md'
 OUT = ROOT / 'output' / 'pdf'
 MD = MarkdownIt('commonmark').enable('table')
 
@@ -82,7 +82,7 @@ def wrap_code(code, limit=94):
 
 
 PREAMBLE = r'''
-#set document(title: "ICPC / CCPC 算法模板手册 · 打印版")
+#set document(title: "RBC_XCPC_算法模板 · 打印版")
 #set text(font: ("SimSun", "Consolas"), size: 10pt, lang: "zh", fill: black)
 #set par(leading: 0.5em, spacing: 0.65em, justify: false)
 #set page(paper: "a4", binding: left,
@@ -97,7 +97,7 @@ PREAMBLE = r'''
     if same.len() > 0 and same.first().location().position().y < 85pt { same.first().body }
     else if prior.len() > 0 { prior.last().body; text("（续）") }
     else if same.len() > 0 { same.first().body }
-    else { text("ICPC / CCPC 算法模板手册") }
+    else { text("RBC_XCPC_算法模板") }
     line(length: 100%, stroke: 0.4pt)
   })
 #set heading(numbering: none)
@@ -118,7 +118,7 @@ PREAMBLE = r'''
     block(height: 12pt, above: 0pt, below: 0pt, breakable: false, raw(if line == "" { " " } else { line }))
   }
 })
-#align(center)[#text(font: "Microsoft YaHei", size: 23pt, weight: "bold")[ICPC / CCPC 算法模板手册]]
+#align(center)[#text(font: "Microsoft YaHei", size: 23pt, weight: "bold", "RBC_XCPC_算法模板")]
 #align(center)[C++17 · 黑白打印版]
 #v(8pt)
 #text(size: 9pt)[打印说明：A4，双面长边翻转，按实际大小（100%）打印。内侧预留装订边距。目录及依赖引用使用本册页码。代码中的 ↪ 为排版续行标记，不属于代码；续行时仍属于上一条源代码行。]
@@ -140,7 +140,7 @@ def build():
         index += 1
         if not line.strip():
             continue
-        if line.startswith('# ICPC') or line.startswith('> C++17'):
+        if line == '# RBC_XCPC_算法模板' or line.startswith('> C++17'):
             continue
         if line.startswith('[完整代码：') or '返回目录' in line:
             continue
@@ -192,8 +192,8 @@ def build():
         else:
             output.append(inline(line.removeprefix('> ')))
     OUT.mkdir(parents=True, exist_ok=True)
-    typ_path = OUT / '算法模板手册_打印版.typ'
-    pdf_path = OUT / '算法模板手册_打印版.pdf'
+    typ_path = OUT / 'RBC_XCPC_算法模板_打印版.typ'
+    pdf_path = OUT / 'RBC_XCPC_算法模板_打印版.pdf'
     typ_path.write_text('\n\n'.join(output), encoding='utf-8')
     typst.compile(str(typ_path), output=str(pdf_path), font_paths=['C:/Windows/Fonts'])
     assert code_count == len(re.findall(r'^```[^\n]+$', source, re.M))

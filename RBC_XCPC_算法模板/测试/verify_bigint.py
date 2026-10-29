@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools'))
 from build_handbook import CODE_PATHS
 
-SOURCE = ROOT / 'ICPC_CCPC算法模板/代码' / CODE_PATHS['bigint']
+SOURCE = ROOT / 'RBC_XCPC_算法模板/代码' / CODE_PATHS['bigint']
 HARNESS = r"""
 int main() {
     ios::sync_with_stdio(false);

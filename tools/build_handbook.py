@@ -7,7 +7,7 @@ import re
 from handbook_data import ENTRIES, HELPERS
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / 'ICPC_CCPC算法模板'
+OUT = ROOT / 'RBC_XCPC_算法模板'
 BY_KEY = {e['key']: e for e in ENTRIES}
 STARTER = BY_KEY['starter']['code']
 PRELUDE, ENTRYPOINT = STARTER.split('void solve()', 1)
@@ -195,7 +195,7 @@ def remove_obsolete(expected):
 def main():
     for folder in ('代码', '章节', '测试'):
         (OUT/folder).mkdir(parents=True, exist_ok=True)
-    full = ['# ICPC / CCPC 算法模板手册\n', '> C++17 · 个人可编辑版 · 2026-10-11\n',
+    full = ['# RBC_XCPC_算法模板\n', '> C++17 · 个人可编辑版 · 2026-10-11\n',
             '## 阅读约定\n',
             '- 普通数组、图和树顶点使用 **1..n**，数组查询默认闭区间 **[l,r]**；字符串、多项式系数等例外按各节说明。\n'
             '- 起手式保留 `i64`、`i128`、`u64`；`// #define int long long` 默认注释。使用前检查数值范围、前置条件和复杂度。\n'
@@ -219,7 +219,7 @@ def main():
         chapter_text = header+'\n## 本章算法目录\n\n'+contents(i,sections)+'\n'+content
         (OUT/'章节'/f'{i:02d}_{chapter}.md').write_text(render_code_links(chapter_text,'../',chapter=chapter),encoding='utf-8')
     full.append((ROOT/'tools/appendix.md').read_text(encoding='utf-8'))
-    (OUT/'算法模板手册.md').write_text(render_code_links('\n'.join(full)),encoding='utf-8')
+    (OUT/'RBC_XCPC_算法模板.md').write_text(render_code_links('\n'.join(full)),encoding='utf-8')
     for key, path in CODE_PATHS.items():
         dest = OUT/'代码'/path
         dest.parent.mkdir(parents=True, exist_ok=True)

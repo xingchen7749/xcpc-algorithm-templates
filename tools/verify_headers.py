@@ -10,7 +10,7 @@ from build_handbook import CODE_PATHS
 from handbook_data import ENTRIES
 
 ROOT = Path(__file__).resolve().parents[1]
-CODE = ROOT / 'ICPC_CCPC算法模板/代码'
+CODE = ROOT / 'RBC_XCPC_算法模板/代码'
 ALGORITHMS = [key for key in CODE_PATHS if key != 'starter']
 
 

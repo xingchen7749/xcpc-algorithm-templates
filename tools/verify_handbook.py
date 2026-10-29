@@ -17,7 +17,7 @@ def check():
     assert actual == expected, ('unexpected or missing code', actual ^ expected)
     manifest = json.loads((OUT/'代码文件清单.json').read_text(encoding='utf-8'))
     assert len(manifest) == len(set(manifest)) and set(manifest) == expected
-    documents = [OUT/'算法模板手册.md', *sorted((OUT/'章节').glob('*.md'))]
+    documents = [OUT/'RBC_XCPC_算法模板.md', *sorted((OUT/'章节').glob('*.md'))]
     all_keys = {e['key'] for e in ENTRIES}
     for path in documents:
         content = path.read_text(encoding='utf-8')
