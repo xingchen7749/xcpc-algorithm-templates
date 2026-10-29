@@ -1213,7 +1213,38 @@ table.header([#text("对比项")],[#text("迭代 Kosaraju（SCC）")],[#text("�
 
 #heading(level: 1, outlined: true)[#text("7. 计算几何")] <chapter-7>
 
-#heading(level: 2, outlined: true)[#text("7.1 线段相交：整数精确判断")] <algorithm-intgeo>
+#heading(level: 2, outlined: true)[#text("7.1 二维叉积")] <algorithm-cross>
+
+#text("向量叉积公式：")#raw("cross(a,b) = a.x * b.y - a.y * b.x")#text("。")
+
+#text("三点叉积公式：")#raw("cross(a,b,c) = (b.x-a.x)*(c.y-a.y) - (b.y-a.y)*(c.x-a.x)")#text("，即向量 AB 与 AC 的叉积。")
+
+#table(columns: (1fr, 1fr),
+table.header([#text("cross(a,b,c)")],[#text("几何含义")]),
+[#text("大于 0")],
+[#text("c 在有向直线 a→b 左侧（要求 a != b）")],
+[#text("小于 0")],
+[#text("c 在有向直线 a→b 右侧（要求 a != b）")],
+[#text("等于 0")],
+[#text("三点共线，包含点重合的情况")],
+[#text("绝对值")],
+[#text("三角形 abc 面积的两倍")])
+
+#text("")#strong[#text("用途与条件")]#text("：计算两个二维向量的叉积，或通过三点叉积判断左右方向、共线及三角形面积。采用 x 轴向右、y 轴向上的坐标系。")
+
+#text("")#strong[#text("复杂度")]#text("：时间与额外空间 O(1)。")
+
+#text("")#strong[#text("易错点")]#text("：坐标绝对值不超过 10^18；使用 i64 存坐标，i128 保存中间运算及结果。交换两个向量会使叉积变号；叉积为零只说明共线，判断点在线段上还要检查坐标范围。整数面积优先保存两倍面积，避免整除丢失半整数。")
+
+#codeblock("// 二维整数点，也用于表示二维向量。\nstruct Point {\n    i64 x, y;\n    // 按 (x,y) 字典序比较当前点和 b，供严格排序使用；不使用浮点容差，O(1)。\n    bool operator<(Point b) const { return tie(x, y) < tie(b.x, b.y); }\n    // 判断当前点与 b 的两个整数坐标是否完全相等，供点集去重使用，O(1)。\n    bool operator==(Point b) const { return x == b.x && y == b.y; }\n};\n// 返回二维向量 a 与 b 的叉积，绝对值为平行四边形面积。\n// 正值表示逆时针，负值表示顺时针，0 表示共线或存在零向量。\n// 坐标绝对值不超过 10^18；先转为 i128 再乘法，时间 O(1)。\ni128 cross(Point a, Point b) {\n    return i128(a.x) * b.y - i128(a.y) * b.x;\n}\n\n// 返回向量 AB 与 AC 的叉积，即三角形 ABC 的两倍有向面积。\n// a != b 时，正值表示 c 在 a→b 左侧，负值表示右侧；0 表示三点共线。\n// 坐标绝对值不超过 10^18；先转为 i128 再减法，时间 O(1)。\ni128 cross(Point a, Point b, Point c) {\n    i128 x1 = i128(b.x) - a.x;\n    i128 y1 = i128(b.y) - a.y;\n    i128 x2 = i128(c.x) - a.x;\n    i128 y2 = i128(c.y) - a.y;\n    return x1 * y2 - y1 * x2;\n}")
+
+#text("")#strong[#text("调用与说明")]#text("：cross(Point{3,0}, Point{0,2}) == 6；cross(Point{0,0}, Point{3,0}, Point{0,2}) == 6。后者表示第三个点在有向直线左侧，三角形面积为 3。")
+
+#heading(level: 3, outlined: false)[#text("使用示例")]
+
+#codeblock("Point a{0, 0}, b{3, 0}, c{0, 2};\ni128 v = cross(a, b, c);  // 结果为 6，c 在 a→b 左侧\ni128 area2 = v < 0 ? -v : v;  // 三角形面积的两倍")
+
+#heading(level: 2, outlined: true)[#text("7.2 线段相交：整数精确判断")] <algorithm-intgeo>
 
 #text("")#strong[#text("用途与条件")]#text("：判断两条闭线段是否相交，包含端点、共线重叠和退化点。")
 
@@ -1221,11 +1252,13 @@ table.header([#text("对比项")],[#text("迭代 Kosaraju（SCC）")],[#text("�
 
 #text("")#strong[#text("易错点")]#text("：坐标绝对值要求不超过 10^18；包含端点接触、共线重叠和退化线段，使用整数精确比较。")
 
-#codeblock("\nstruct Point {\n    i64 x, y;\n    // 按 (x,y) 字典序比较当前点和 b，供严格排序使用；不使用浮点容差，O(1)。\n    bool operator<(Point b) const { return tie(x, y) < tie(b.x, b.y); }\n    // 判断当前点与 b 的两个整数坐标是否完全相等，供点集去重使用，O(1)。\n    bool operator==(Point b) const { return x == b.x && y == b.y; }\n};\n// 返回向量 AB 与 AC 的叉积，即三点构成三角形的两倍有向面积。\n// 正值表示 a→b→c 逆时针，0 表示共线；坐标绝对值要求不超过 10^18，O(1)。\ni128 cross(Point a, Point b, Point c) {\n    return (i128(b.x) - a.x) * (i128(c.y) - a.y) - (i128(b.y) - a.y) * (i128(c.x) - a.x);\n}\n// 返回 x 的符号：负数为 -1，零为 0，正数为 1；时间 O(1)。\nint sign(i128 x) { return (x > 0) - (x < 0); }\n// 判断点 p 是否在线段 ab 上，包含端点，也支持 a=b 的退化线段。\n// 使用精确叉积和坐标范围判断，坐标满足整数几何范围约定；时间 O(1)。\nbool on_segment(Point p, Point a, Point b) {\n    return cross(a, b, p) == 0 && min(a.x, b.x) <= p.x && p.x <= max(a.x, b.x) &&\n           min(a.y, b.y) <= p.y && p.y <= max(a.y, b.y);\n}\n\n\n// 判断闭线段 ab 与 cd 是否有交点，包含端点接触、共线重叠和退化点。\n// 使用整数精确判断，坐标绝对值不超过 10^18；时间 O(1)。\nbool intersect(Point a, Point b, Point c, Point d) {\n    int x = sign(cross(a, b, c)), y = sign(cross(a, b, d));\n    int z = sign(cross(c, d, a)), w = sign(cross(c, d, b));\n    if (!x && on_segment(c, a, b)) return true;\n    if (!y && on_segment(d, a, b)) return true;\n    if (!z && on_segment(a, c, d)) return true;\n    if (!w && on_segment(b, c, d)) return true;\n    return x * y < 0 && z * w < 0;\n}")
+#text("")#strong[#text("依赖")]#text("：")#text("查看 7.1「二维叉积」")（第 #ref(label("algorithm-cross"), form: "page", supplement: none) 页）#text("；完整代码已展开依赖，可单独使用。")
+
+#codeblock("\n// 返回 x 的符号：负数为 -1，零为 0，正数为 1；时间 O(1)。\nint sign(i128 x) { return (x > 0) - (x < 0); }\n// 判断点 p 是否在线段 ab 上，包含端点，也支持 a=b 的退化线段。\n// 使用精确叉积和坐标范围判断，坐标满足整数几何范围约定；时间 O(1)。\nbool on_segment(Point p, Point a, Point b) {\n    return cross(a, b, p) == 0 && min(a.x, b.x) <= p.x && p.x <= max(a.x, b.x) &&\n           min(a.y, b.y) <= p.y && p.y <= max(a.y, b.y);\n}\n\n\n// 判断闭线段 ab 与 cd 是否有交点，包含端点接触、共线重叠和退化点。\n// 使用整数精确判断，坐标绝对值不超过 10^18；时间 O(1)。\nbool intersect(Point a, Point b, Point c, Point d) {\n    int x = sign(cross(a, b, c)), y = sign(cross(a, b, d));\n    int z = sign(cross(c, d, a)), w = sign(cross(c, d, b));\n    if (!x && on_segment(c, a, b)) return true;\n    if (!y && on_segment(d, a, b)) return true;\n    if (!z && on_segment(a, c, d)) return true;\n    if (!w && on_segment(b, c, d)) return true;\n    return x * y < 0 && z * w < 0;\n}")
 
 #text("")#strong[#text("调用与说明")]#text("：intersect({0,0},{2,0},{1,0},{3,0})==true。")
 
-#heading(level: 2, outlined: true)[#text("7.2 凸包：单调链")] <algorithm-hull>
+#heading(level: 2, outlined: true)[#text("7.3 凸包：单调链")] <algorithm-hull>
 
 #text("")#strong[#text("用途与条件")]#text("：求整数点集的逆时针凸包，去重且删除边上中间共线点；返回无占位顶点列表。")
 
@@ -1233,11 +1266,13 @@ table.header([#text("对比项")],[#text("迭代 Kosaraju（SCC）")],[#text("�
 
 #text("")#strong[#text("易错点")]#text("：要求坐标绝对值≤10^18，以保证差值及叉积落在数值范围内。排序使用严格字典序，不加 eps。全共线凸包只保留两个端点。")
 
-#codeblock("\nstruct Point {\n    i64 x, y;\n    // 按 (x,y) 字典序比较当前点和 b，供严格排序使用；不使用浮点容差，O(1)。\n    bool operator<(Point b) const { return tie(x, y) < tie(b.x, b.y); }\n    // 判断当前点与 b 的两个整数坐标是否完全相等，供点集去重使用，O(1)。\n    bool operator==(Point b) const { return x == b.x && y == b.y; }\n};\n// 返回向量 AB 与 AC 的叉积，即三点构成三角形的两倍有向面积。\n// 正值表示 a→b→c 逆时针，0 表示共线；坐标绝对值要求不超过 10^18，O(1)。\ni128 cross(Point a, Point b, Point c) {\n    return (i128(b.x) - a.x) * (i128(c.y) - a.y) - (i128(b.y) - a.y) * (i128(c.x) - a.x);\n}\n// 返回 x 的符号：负数为 -1，零为 0，正数为 1；时间 O(1)。\nint sign(i128 x) { return (x > 0) - (x < 0); }\n// 判断点 p 是否在线段 ab 上，包含端点，也支持 a=b 的退化线段。\n// 使用精确叉积和坐标范围判断，坐标满足整数几何范围约定；时间 O(1)。\nbool on_segment(Point p, Point a, Point b) {\n    return cross(a, b, p) == 0 && min(a.x, b.x) <= p.x && p.x <= max(a.x, b.x) &&\n           min(a.y, b.y) <= p.y && p.y <= max(a.y, b.y);\n}\n\n\n// 返回点集 p 的逆时针凸包顶点列表，不带占位、不重复首点，删除边上中间共线点。\n// 输入可无序、有重复，不修改调用者的点集；全共线时只留端点，时间 O(n log n)。\nvector<Point> convex_hull(vector<Point> p) {\n    sort(p.begin(), p.end());\n    p.erase(unique(p.begin(), p.end()), p.end());\n    int n = p.size();\n    if (n <= 1) return p;\n    vector<Point> h(2 * n);\n    int k = 0;\n    for (auto v : p) {\n        while (k >= 2 && cross(h[k - 2], h[k - 1], v) <= 0) {\n            --k;\n        }\n        h[k++] = v;\n    }\n    for (int i = n - 2, t = k + 1; i >= 0; --i) {\n        while (k >= t && cross(h[k - 2], h[k - 1], p[i]) <= 0) {\n            --k;\n        }\n        h[k++] = p[i];\n    }\n    h.resize(k - 1);\n    return h;\n}")
+#text("")#strong[#text("依赖")]#text("：")#text("查看 7.1「二维叉积」")（第 #ref(label("algorithm-cross"), form: "page", supplement: none) 页）#text("；完整代码已展开依赖，可单独使用。")
+
+#codeblock("// 返回点集 p 的逆时针凸包顶点列表，不带占位、不重复首点，删除边上中间共线点。\n// 输入可无序、有重复，不修改调用者的点集；全共线时只留端点，时间 O(n log n)。\nvector<Point> convex_hull(vector<Point> p) {\n    sort(p.begin(), p.end());\n    p.erase(unique(p.begin(), p.end()), p.end());\n    int n = p.size();\n    if (n <= 1) return p;\n    vector<Point> h(2 * n);\n    int k = 0;\n    for (auto v : p) {\n        while (k >= 2 && cross(h[k - 2], h[k - 1], v) <= 0) {\n            --k;\n        }\n        h[k++] = v;\n    }\n    for (int i = n - 2, t = k + 1; i >= 0; --i) {\n        while (k >= t && cross(h[k - 2], h[k - 1], p[i]) <= 0) {\n            --k;\n        }\n        h[k++] = p[i];\n    }\n    h.resize(k - 1);\n    return h;\n}")
 
 #text("")#strong[#text("调用与说明")]#text("：convex_hull({{0,0},{1,0},{1,1},{0,1}}) 返回四个逆时针顶点。")
 
-#heading(level: 2, outlined: true)[#text("7.3 多边形面积")] <algorithm-polygon>
+#heading(level: 2, outlined: true)[#text("7.4 多边形面积")] <algorithm-polygon>
 
 #text("")#strong[#text("用途与条件")]#text("：顶点按边界顺序给出；返回两倍有向面积，逆时针为正。")
 
@@ -1245,11 +1280,13 @@ table.header([#text("对比项")],[#text("迭代 Kosaraju（SCC）")],[#text("�
 
 #text("")#strong[#text("易错点")]#text("：点列表无占位、不重复首点；坐标及叉积累加须在数值范围内。")
 
-#codeblock("\nstruct Point {\n    i64 x, y;\n    // 按 (x,y) 字典序比较当前点和 b，供严格排序使用；不使用浮点容差，O(1)。\n    bool operator<(Point b) const { return tie(x, y) < tie(b.x, b.y); }\n    // 判断当前点与 b 的两个整数坐标是否完全相等，供点集去重使用，O(1)。\n    bool operator==(Point b) const { return x == b.x && y == b.y; }\n};\n// 返回向量 AB 与 AC 的叉积，即三点构成三角形的两倍有向面积。\n// 正值表示 a→b→c 逆时针，0 表示共线；坐标绝对值要求不超过 10^18，O(1)。\ni128 cross(Point a, Point b, Point c) {\n    return (i128(b.x) - a.x) * (i128(c.y) - a.y) - (i128(b.y) - a.y) * (i128(c.x) - a.x);\n}\n// 返回 x 的符号：负数为 -1，零为 0，正数为 1；时间 O(1)。\nint sign(i128 x) { return (x > 0) - (x < 0); }\n// 判断点 p 是否在线段 ab 上，包含端点，也支持 a=b 的退化线段。\n// 使用精确叉积和坐标范围判断，坐标满足整数几何范围约定；时间 O(1)。\nbool on_segment(Point p, Point a, Point b) {\n    return cross(a, b, p) == 0 && min(a.x, b.x) <= p.x && p.x <= max(a.x, b.x) &&\n           min(a.y, b.y) <= p.y && p.y <= max(a.y, b.y);\n}\n\n\n// Dependency: Point, cross, on_segment.\n// 返回按边界顺序排列的多边形顶点 p 的两倍有向面积，逆时针为正、顺时针为负。\n// p 是无占位循环列表，不需重复首点；要求叉积累加不溢出 i128，时间 O(n)。\ni128 area2(const vector<Point>& p) {\n    i128 a = 0;\n    int n = p.size();\n    for (int i = 0; i < n; ++i) {\n        auto q = p[(i + 1) % n];\n        a += i128(p[i].x) * q.y - i128(p[i].y) * q.x;\n    }\n    return a;\n}")
+#text("")#strong[#text("依赖")]#text("：")#text("查看 7.1「二维叉积」")（第 #ref(label("algorithm-cross"), form: "page", supplement: none) 页）#text("；完整代码已展开依赖，可单独使用。")
+
+#codeblock("// Dependency: Point, cross, on_segment.\n// 返回按边界顺序排列的多边形顶点 p 的两倍有向面积，逆时针为正、顺时针为负。\n// p 是无占位循环列表，不需重复首点；要求叉积累加不溢出 i128，时间 O(n)。\ni128 area2(const vector<Point>& p) {\n    i128 a = 0;\n    int n = p.size();\n    for (int i = 0; i < n; ++i) {\n        auto q = p[(i + 1) % n];\n        a += i128(p[i].x) * q.y - i128(p[i].y) * q.x;\n    }\n    return a;\n}")
 
 #text("")#strong[#text("调用与说明")]#text("：area2({{0,0},{4,0},{4,4},{0,4}})==32。")
 
-#heading(level: 2, outlined: true)[#text("7.4 点与多边形的位置关系")] <algorithm-point_location>
+#heading(level: 2, outlined: true)[#text("7.5 点与多边形的位置关系")] <algorithm-point_location>
 
 #text("")#strong[#text("用途与条件")]#text("：判断点与简单多边形的位置；返回 0 外部、1 边界、2 内部。")
 
@@ -1257,11 +1294,13 @@ table.header([#text("对比项")],[#text("迭代 Kosaraju（SCC）")],[#text("�
 
 #text("")#strong[#text("易错点")]#text("：点列表无占位、不重复首点；坐标及叉积累加须在数值范围内。")
 
-#codeblock("\nstruct Point {\n    i64 x, y;\n    // 按 (x,y) 字典序比较当前点和 b，供严格排序使用；不使用浮点容差，O(1)。\n    bool operator<(Point b) const { return tie(x, y) < tie(b.x, b.y); }\n    // 判断当前点与 b 的两个整数坐标是否完全相等，供点集去重使用，O(1)。\n    bool operator==(Point b) const { return x == b.x && y == b.y; }\n};\n// 返回向量 AB 与 AC 的叉积，即三点构成三角形的两倍有向面积。\n// 正值表示 a→b→c 逆时针，0 表示共线；坐标绝对值要求不超过 10^18，O(1)。\ni128 cross(Point a, Point b, Point c) {\n    return (i128(b.x) - a.x) * (i128(c.y) - a.y) - (i128(b.y) - a.y) * (i128(c.x) - a.x);\n}\n// 返回 x 的符号：负数为 -1，零为 0，正数为 1；时间 O(1)。\nint sign(i128 x) { return (x > 0) - (x < 0); }\n// 判断点 p 是否在线段 ab 上，包含端点，也支持 a=b 的退化线段。\n// 使用精确叉积和坐标范围判断，坐标满足整数几何范围约定；时间 O(1)。\nbool on_segment(Point p, Point a, Point b) {\n    return cross(a, b, p) == 0 && min(a.x, b.x) <= p.x && p.x <= max(a.x, b.x) &&\n           min(a.y, b.y) <= p.y && p.y <= max(a.y, b.y);\n}\n\n\n// 判断点 q 与简单多边形 p 的位置关系：0 为外部、1 为边界、2 为内部。\n// p 是按边界顺序排列的无占位循环列表，顺逆时针均可；时间 O(n)。\nint inside(const vector<Point>& p, Point q) {\n    // wn（winding number）：绕数；点不在边界时，非零表示在多边形内部。\n    int wn = 0, n = p.size();\n    for (int i = 0; i < n; ++i) {\n        Point a = p[i], b = p[(i + 1) % n];\n        if (on_segment(q, a, b)) return 1;\n        if (a.y <= q.y && b.y > q.y && cross(a, b, q) > 0) {\n            ++wn;\n        }\n        if (a.y > q.y && b.y <= q.y && cross(a, b, q) < 0) {\n            --wn;\n        }\n    }\n    return wn ? 2 : 0;\n}")
+#text("")#strong[#text("依赖")]#text("：")#text("查看 7.1「二维叉积」")（第 #ref(label("algorithm-cross"), form: "page", supplement: none) 页）#text("；完整代码已展开依赖，可单独使用。")
+
+#codeblock("\n// 返回 x 的符号：负数为 -1，零为 0，正数为 1；时间 O(1)。\nint sign(i128 x) { return (x > 0) - (x < 0); }\n// 判断点 p 是否在线段 ab 上，包含端点，也支持 a=b 的退化线段。\n// 使用精确叉积和坐标范围判断，坐标满足整数几何范围约定；时间 O(1)。\nbool on_segment(Point p, Point a, Point b) {\n    return cross(a, b, p) == 0 && min(a.x, b.x) <= p.x && p.x <= max(a.x, b.x) &&\n           min(a.y, b.y) <= p.y && p.y <= max(a.y, b.y);\n}\n\n\n// 判断点 q 与简单多边形 p 的位置关系：0 为外部、1 为边界、2 为内部。\n// p 是按边界顺序排列的无占位循环列表，顺逆时针均可；时间 O(n)。\nint inside(const vector<Point>& p, Point q) {\n    // wn（winding number）：绕数；点不在边界时，非零表示在多边形内部。\n    int wn = 0, n = p.size();\n    for (int i = 0; i < n; ++i) {\n        Point a = p[i], b = p[(i + 1) % n];\n        if (on_segment(q, a, b)) return 1;\n        if (a.y <= q.y && b.y > q.y && cross(a, b, q) > 0) {\n            ++wn;\n        }\n        if (a.y > q.y && b.y <= q.y && cross(a, b, q) < 0) {\n            --wn;\n        }\n    }\n    return wn ? 2 : 0;\n}")
 
 #text("")#strong[#text("调用与说明")]#text("：inside({{0,0},{4,0},{4,4},{0,4}},{2,2})==2。")
 
-#heading(level: 2, outlined: true)[#text("7.5 旋转卡壳：凸包直径")] <algorithm-diameter>
+#heading(level: 2, outlined: true)[#text("7.6 旋转卡壳：凸包直径")] <algorithm-diameter>
 
 #text("")#strong[#text("用途与条件")]#text("：求逆时针凸多边形最远点对距离平方；不足两个点返回 0。")
 
@@ -1269,11 +1308,13 @@ table.header([#text("对比项")],[#text("迭代 Kosaraju（SCC）")],[#text("�
 
 #text("")#strong[#text("易错点")]#text("：输入必须逆时针且去除边上中间共线点，可用凸包模板预处理；坐标绝对值不超过 10^18。")
 
-#codeblock("\nstruct Point {\n    i64 x, y;\n    // 按 (x,y) 字典序比较当前点和 b，供严格排序使用；不使用浮点容差，O(1)。\n    bool operator<(Point b) const { return tie(x, y) < tie(b.x, b.y); }\n    // 判断当前点与 b 的两个整数坐标是否完全相等，供点集去重使用，O(1)。\n    bool operator==(Point b) const { return x == b.x && y == b.y; }\n};\n// 返回向量 AB 与 AC 的叉积，即三点构成三角形的两倍有向面积。\n// 正值表示 a→b→c 逆时针，0 表示共线；坐标绝对值要求不超过 10^18，O(1)。\ni128 cross(Point a, Point b, Point c) {\n    return (i128(b.x) - a.x) * (i128(c.y) - a.y) - (i128(b.y) - a.y) * (i128(c.x) - a.x);\n}\n// 返回 x 的符号：负数为 -1，零为 0，正数为 1；时间 O(1)。\nint sign(i128 x) { return (x > 0) - (x < 0); }\n// 判断点 p 是否在线段 ab 上，包含端点，也支持 a=b 的退化线段。\n// 使用精确叉积和坐标范围判断，坐标满足整数几何范围约定；时间 O(1)。\nbool on_segment(Point p, Point a, Point b) {\n    return cross(a, b, p) == 0 && min(a.x, b.x) <= p.x && p.x <= max(a.x, b.x) &&\n           min(a.y, b.y) <= p.y && p.y <= max(a.y, b.y);\n}\n\n\n// 返回整数点 a、b 的欧氏距离平方，避免开方；坐标绝对值不超过 10^18，时间 O(1)。\ni128 dist2(Point a, Point b) {\n    i128 x = i128(a.x) - b.x, y = i128(a.y) - b.y;\n    return x * x + y * y;\n}\n// 用旋转卡壳返回凸多边形最远两点距离的平方；不足两个点返回 0。\n// p 必须逆时针排列且无边上中间共线点，可直接使用 convex_hull 的结果；时间 O(n)。\ni128 diameter2(const vector<Point>& p) {\n    int n = p.size();\n    if (n < 2) return 0;\n    if (n == 2) return dist2(p[0], p[1]);\n    i128 ans = 0;\n    int j = 1;\n    for (int i = 0; i < n; ++i) {\n        int ni = (i + 1) % n;\n        while (cross(p[i], p[ni], p[(j + 1) % n]) > cross(p[i], p[ni], p[j])) {\n            j = (j + 1) % n;\n        }\n        ans = max({ans, dist2(p[i], p[j]), dist2(p[ni], p[j])});\n    }\n    return ans;\n}")
+#text("")#strong[#text("依赖")]#text("：")#text("查看 7.1「二维叉积」")（第 #ref(label("algorithm-cross"), form: "page", supplement: none) 页）#text("；完整代码已展开依赖，可单独使用。")
+
+#codeblock("// 返回整数点 a、b 的欧氏距离平方，避免开方；坐标绝对值不超过 10^18，时间 O(1)。\ni128 dist2(Point a, Point b) {\n    i128 x = i128(a.x) - b.x, y = i128(a.y) - b.y;\n    return x * x + y * y;\n}\n// 用旋转卡壳返回凸多边形最远两点距离的平方；不足两个点返回 0。\n// p 必须逆时针排列且无边上中间共线点，可直接使用 convex_hull 的结果；时间 O(n)。\ni128 diameter2(const vector<Point>& p) {\n    int n = p.size();\n    if (n < 2) return 0;\n    if (n == 2) return dist2(p[0], p[1]);\n    i128 ans = 0;\n    int j = 1;\n    for (int i = 0; i < n; ++i) {\n        int ni = (i + 1) % n;\n        while (cross(p[i], p[ni], p[(j + 1) % n]) > cross(p[i], p[ni], p[j])) {\n            j = (j + 1) % n;\n        }\n        ans = max({ans, dist2(p[i], p[j]), dist2(p[ni], p[j])});\n    }\n    return ans;\n}")
 
 #text("")#strong[#text("调用与说明")]#text("：diameter2({{0,0},{1,0},{1,1},{0,1}})==2。")
 
-#heading(level: 2, outlined: true)[#text("7.6 直线交点")] <algorithm-floatgeo>
+#heading(level: 2, outlined: true)[#text("7.7 直线交点")] <algorithm-floatgeo>
 
 #text("")#strong[#text("用途与条件")]#text("：直线由点和非零方向向量表示；返回唯一交点，平行或重合返回 nullopt。")
 
@@ -1285,7 +1326,7 @@ table.header([#text("对比项")],[#text("迭代 Kosaraju（SCC）")],[#text("�
 
 #text("")#strong[#text("调用与说明")]#text("：line_intersection({0,0},{1,1},{0,1},{1,-1}) 为 (0.5,0.5)。直线平行和重合均返回无单一交点。")
 
-#heading(level: 2, outlined: true)[#text("7.7 圆与圆交点")] <algorithm-circle>
+#heading(level: 2, outlined: true)[#text("7.8 圆与圆交点")] <algorithm-circle>
 
 #text("")#strong[#text("用途与条件")]#text("：两圆半径非负；返回交点数及交点列表，-1 表示重合且交点无穷。")
 
@@ -1297,7 +1338,7 @@ table.header([#text("对比项")],[#text("迭代 Kosaraju（SCC）")],[#text("�
 
 #text("")#strong[#text("调用与说明")]#text("：circle_intersection({0,0},1,{2,0},1).first==1。")
 
-#heading(level: 2, outlined: true)[#text("7.8 有界半平面交：逐边裁剪")] <algorithm-halfplane>
+#heading(level: 2, outlined: true)[#text("7.9 有界半平面交：逐边裁剪")] <algorithm-halfplane>
 
 #text("")#strong[#text("用途与条件")]#text("：用凸多边形逐个裁剪半平面，保留有向直线 a→b 左侧（含边界）。依赖浮点几何 P/cross/EPS。 例外：poly 是无占位的循环顶点列表，位置从 0 开始，与本章其他几何函数一致。")
 

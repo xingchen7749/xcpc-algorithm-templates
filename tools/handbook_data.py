@@ -4011,6 +4011,60 @@ vector<i64> divide_dp_layer(const vector<i64>& prev, Cost cost) {
     '分组 DP 可令 prev[0]=0，其他为 INF，逐层调用。cost(j,i) 为最后一组 [j+1,i] 的代价。')
 
 add('计算几何',
+    'cross',
+    '二维叉积',
+    '计算两个二维向量的叉积，或通过三点叉积判断左右方向、共线及三角形面积。采用 x 轴向右、y 轴向上的坐标系。',
+    '时间与额外空间 O(1)。',
+    '坐标绝对值不超过 10^18；使用 i64 存坐标，i128 保存中间运算及结果。交换两个向量会使叉积变号；叉积为零只说明共线，判断点在线段上还要检查坐标范围。整数面积优先保存两倍面积，避免整除丢失半整数。',
+    r'''
+// 二维整数点，也用于表示二维向量。
+struct Point {
+    i64 x, y;
+    // 按 (x,y) 字典序比较当前点和 b，供严格排序使用；不使用浮点容差，O(1)。
+    bool operator<(Point b) const { return tie(x, y) < tie(b.x, b.y); }
+    // 判断当前点与 b 的两个整数坐标是否完全相等，供点集去重使用，O(1)。
+    bool operator==(Point b) const { return x == b.x && y == b.y; }
+};
+// 返回二维向量 a 与 b 的叉积，绝对值为平行四边形面积。
+// 正值表示逆时针，负值表示顺时针，0 表示共线或存在零向量。
+// 坐标绝对值不超过 10^18；先转为 i128 再乘法，时间 O(1)。
+i128 cross(Point a, Point b) {
+    return i128(a.x) * b.y - i128(a.y) * b.x;
+}
+
+// 返回向量 AB 与 AC 的叉积，即三角形 ABC 的两倍有向面积。
+// a != b 时，正值表示 c 在 a→b 左侧，负值表示右侧；0 表示三点共线。
+// 坐标绝对值不超过 10^18；先转为 i128 再减法，时间 O(1)。
+i128 cross(Point a, Point b, Point c) {
+    i128 x1 = i128(b.x) - a.x;
+    i128 y1 = i128(b.y) - a.y;
+    i128 x2 = i128(c.x) - a.x;
+    i128 y2 = i128(c.y) - a.y;
+    return x1 * y2 - y1 * x2;
+}
+''',
+    'cross(Point{3,0}, Point{0,2}) == 6；cross(Point{0,0}, Point{3,0}, Point{0,2}) == 6。后者表示第三个点在有向直线左侧，三角形面积为 3。',
+    intro='''向量叉积公式：`cross(a,b) = a.x * b.y - a.y * b.x`。
+
+三点叉积公式：`cross(a,b,c) = (b.x-a.x)*(c.y-a.y) - (b.y-a.y)*(c.x-a.x)`，即向量 AB 与 AC 的叉积。
+
+| cross(a,b,c) | 几何含义 |
+|---|---|
+| 大于 0 | c 在有向直线 a→b 左侧（要求 a != b） |
+| 小于 0 | c 在有向直线 a→b 右侧（要求 a != b） |
+| 等于 0 | 三点共线，包含点重合的情况 |
+| 绝对值 | 三角形 abc 面积的两倍 |
+''',
+    after='''### 使用示例
+
+```cpp
+Point a{0, 0}, b{3, 0}, c{0, 2};
+i128 v = cross(a, b, c);  // 结果为 6，c 在 a→b 左侧
+i128 area2 = v < 0 ? -v : v;  // 三角形面积的两倍
+```
+''')
+
+add('计算几何',
     'intgeo',
     '线段相交：整数精确判断',
     '判断两条闭线段是否相交，包含端点、共线重叠和退化点。',
@@ -4230,18 +4284,6 @@ vector<P> clip_halfplane(const vector<P>& poly, P a, P b) {
 
 HELPERS = {
 'geo_int': r'''
-struct Point {
-    i64 x, y;
-    // 按 (x,y) 字典序比较当前点和 b，供严格排序使用；不使用浮点容差，O(1)。
-    bool operator<(Point b) const { return tie(x, y) < tie(b.x, b.y); }
-    // 判断当前点与 b 的两个整数坐标是否完全相等，供点集去重使用，O(1)。
-    bool operator==(Point b) const { return x == b.x && y == b.y; }
-};
-// 返回向量 AB 与 AC 的叉积，即三点构成三角形的两倍有向面积。
-// 正值表示 a→b→c 逆时针，0 表示共线；坐标绝对值要求不超过 10^18，O(1)。
-i128 cross(Point a, Point b, Point c) {
-    return (i128(b.x) - a.x) * (i128(c.y) - a.y) - (i128(b.y) - a.y) * (i128(c.x) - a.x);
-}
 // 返回 x 的符号：负数为 -1，零为 0，正数为 1；时间 O(1)。
 int sign(i128 x) { return (x > 0) - (x < 0); }
 // 判断点 p 是否在线段 ab 上，包含端点，也支持 a=b 的退化线段。

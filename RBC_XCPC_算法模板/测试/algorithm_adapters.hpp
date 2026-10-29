@@ -3290,8 +3290,8 @@ vector<i64> divide_dp_layer(const vector<i64>& prev, Cost cost) {
 }
 }
 
-namespace cp_geo_int {
-
+namespace cp_cross {
+// 二维整数点，也用于表示二维向量。
 struct Point {
     i64 x, y;
     // 按 (x,y) 字典序比较当前点和 b，供严格排序使用；不使用浮点容差，O(1)。
@@ -3299,11 +3299,29 @@ struct Point {
     // 判断当前点与 b 的两个整数坐标是否完全相等，供点集去重使用，O(1)。
     bool operator==(Point b) const { return x == b.x && y == b.y; }
 };
-// 返回向量 AB 与 AC 的叉积，即三点构成三角形的两倍有向面积。
-// 正值表示 a→b→c 逆时针，0 表示共线；坐标绝对值要求不超过 10^18，O(1)。
-i128 cross(Point a, Point b, Point c) {
-    return (i128(b.x) - a.x) * (i128(c.y) - a.y) - (i128(b.y) - a.y) * (i128(c.x) - a.x);
+// 返回二维向量 a 与 b 的叉积，绝对值为平行四边形面积。
+// 正值表示逆时针，负值表示顺时针，0 表示共线或存在零向量。
+// 坐标绝对值不超过 10^18；先转为 i128 再乘法，时间 O(1)。
+i128 cross(Point a, Point b) {
+    return i128(a.x) * b.y - i128(a.y) * b.x;
 }
+
+// 返回向量 AB 与 AC 的叉积，即三角形 ABC 的两倍有向面积。
+// a != b 时，正值表示 c 在 a→b 左侧，负值表示右侧；0 表示三点共线。
+// 坐标绝对值不超过 10^18；先转为 i128 再减法，时间 O(1)。
+i128 cross(Point a, Point b, Point c) {
+    i128 x1 = i128(b.x) - a.x;
+    i128 y1 = i128(b.y) - a.y;
+    i128 x2 = i128(c.x) - a.x;
+    i128 y2 = i128(c.y) - a.y;
+    return x1 * y2 - y1 * x2;
+}
+}
+
+namespace cp_geo_int {
+using cp_cross::Point;
+using cp_cross::cross;
+
 // 返回 x 的符号：负数为 -1，零为 0，正数为 1；时间 O(1)。
 int sign(i128 x) { return (x > 0) - (x < 0); }
 // 判断点 p 是否在线段 ab 上，包含端点，也支持 a=b 的退化线段。
@@ -3316,8 +3334,8 @@ bool on_segment(Point p, Point a, Point b) {
 }
 
 namespace cp_intgeo {
-using cp_geo_int::Point;
-using cp_geo_int::cross;
+using cp_cross::Point;
+using cp_cross::cross;
 using cp_geo_int::sign;
 using cp_geo_int::on_segment;
 // 判断闭线段 ab 与 cd 是否有交点，包含端点接触、共线重叠和退化点。
@@ -3334,8 +3352,8 @@ bool intersect(Point a, Point b, Point c, Point d) {
 }
 
 namespace cp_hull {
-using cp_geo_int::Point;
-using cp_geo_int::cross;
+using cp_cross::Point;
+using cp_cross::cross;
 // 返回点集 p 的逆时针凸包顶点列表，不带占位、不重复首点，删除边上中间共线点。
 // 输入可无序、有重复，不修改调用者的点集；全共线时只留端点，时间 O(n log n)。
 vector<Point> convex_hull(vector<Point> p) {
@@ -3363,7 +3381,7 @@ vector<Point> convex_hull(vector<Point> p) {
 }
 
 namespace cp_polygon {
-using cp_geo_int::Point;
+using cp_cross::Point;
 // Dependency: Point, cross, on_segment.
 // 返回按边界顺序排列的多边形顶点 p 的两倍有向面积，逆时针为正、顺时针为负。
 // p 是无占位循环列表，不需重复首点；要求叉积累加不溢出 i128，时间 O(n)。
@@ -3379,8 +3397,8 @@ i128 area2(const vector<Point>& p) {
 }
 
 namespace cp_point_location {
-using cp_geo_int::Point;
-using cp_geo_int::cross;
+using cp_cross::Point;
+using cp_cross::cross;
 using cp_geo_int::on_segment;
 // 判断点 q 与简单多边形 p 的位置关系：0 为外部、1 为边界、2 为内部。
 // p 是按边界顺序排列的无占位循环列表，顺逆时针均可；时间 O(n)。
@@ -3402,8 +3420,8 @@ int inside(const vector<Point>& p, Point q) {
 }
 
 namespace cp_diameter {
-using cp_geo_int::Point;
-using cp_geo_int::cross;
+using cp_cross::Point;
+using cp_cross::cross;
 // 返回整数点 a、b 的欧氏距离平方，避免开方；坐标绝对值不超过 10^18，时间 O(1)。
 i128 dist2(Point a, Point b) {
     i128 x = i128(a.x) - b.x, y = i128(a.y) - b.y;

@@ -406,6 +406,17 @@ void dp(){
 
 void geometry(){
     using cp_intgeo::Point;
+    CHECK(cp_cross::cross({3, 0}, {0, 2}) == 6);
+    CHECK(cp_cross::cross({0, 2}, {3, 0}) == -6);
+    CHECK(cp_cross::cross({0, 0}, {3, 2}) == 0);
+    CHECK(cp_cross::cross({2, 4}, {-1, -2}) == 0);
+    CHECK(cp_cross::cross({1, 1}, {4, 1}, {1, 3}) == 6);
+    CHECK(cp_cross::cross({1, 1}, {1, 3}, {4, 1}) == -6);
+    CHECK(cp_cross::cross({1, 1}, {2, 2}, {3, 3}) == 0);
+    CHECK(cp_cross::cross({1, 1}, {1, 1}, {3, 3}) == 0);
+    const i64 bound = 1000000000000000000LL;
+    CHECK(cp_cross::cross({bound, bound}, {-bound, bound}) == i128(2) * bound * bound);
+    CHECK(cp_cross::cross({-bound, -bound}, {bound, -bound}, {-bound, bound}) == i128(4) * bound * bound);
     CHECK(cp_intgeo::intersect({0,0},{2,0},{1,0},{3,0}));
     CHECK(!cp_intgeo::intersect({0,0},{1,0},{2,0},{3,0}));
     CHECK(cp_intgeo::intersect({0,0},{0,0},{0,0},{1,1}));
