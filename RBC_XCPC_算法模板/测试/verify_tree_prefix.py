@@ -5,30 +5,38 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 TEST = r'''
-int main() {
+int main()
+{
     mt19937 rng(20261018);
     long long checks = 0;
-    for (int mode = 0; mode < 3; ++mode) {
-        for (int n = 1; n <= 40; ++n) {
+    for (int mode = 0; mode < 3; ++mode)
+    {
+        for (int n = 1; n <= 40; ++n)
+        {
             vector<vector<int>> g(n + 1);
             vector<vector<pair<int, i64>>> edges(n + 1);
             vector<i64> point(n + 1);
             for (int u = 1; u <= n; ++u) point[u] = (int)(rng() % 201) - 100;
-            for (int u = 2; u <= n; ++u) {
-                int p = mode == 0 ? u - 1 : mode == 1 ? 1 : 1 + rng() % (u - 1);
+            for (int u = 2; u <= n; ++u)
+            {
+                int p = mode == 0 ? u - 1 : mode == 1 ? 1
+                                                      : 1 + rng() % (u - 1);
                 i64 w = (int)(rng() % 201) - 100;
                 g[u].push_back(p);
                 g[p].push_back(u);
                 edges[u].push_back({p, w});
                 edges[p].push_back({u, w});
             }
-            for (int root : {1, n, 1 + (int)(rng() % n)}) {
+            for (int root : {1, n, 1 + (int)(rng() % n)})
+            {
                 vector<int> father(n + 1, -1), order{root};
                 vector<i64> a(n + 1, 777);
                 father[root] = root;
-                for (int i = 0; i < n; ++i) {
+                for (int i = 0; i < n; ++i)
+                {
                     int u = order[i];
-                    for (auto [v, w] : edges[u]) {
+                    for (auto [v, w] : edges[u])
+                    {
                         if (father[v] != -1) continue;
                         father[v] = u;
                         a[v] = w;
@@ -37,18 +45,21 @@ int main() {
                 }
                 TreePointPrefix points(g, point, root);
                 TreeEdgePrefix weights(g, a, root);
-                for (int s = 1; s <= n; ++s) {
+                for (int s = 1; s <= n; ++s)
+                {
                     vector<int> seen(n + 1);
                     vector<i64> ps(n + 1), es(n + 1);
                     vector<int> q{s};
                     seen[s] = 1;
                     ps[s] = point[s];
-                    for (int i = 0; i < n; ++i) {
+                    for (int i = 0; i < n; ++i)
+                    {
                         int u = q[i];
                         assert(points.query(s, u) == ps[u]);
                         assert(weights.query(s, u) == es[u]);
                         checks += 2;
-                        for (auto [v, w] : edges[u]) {
+                        for (auto [v, w] : edges[u])
+                        {
                             if (seen[v]) continue;
                             seen[v] = 1;
                             ps[v] = ps[u] + point[v];
@@ -63,7 +74,8 @@ int main() {
     int n = 200000;
     vector<vector<int>> g(n + 1);
     vector<i64> a(n + 1, 1000000000LL);
-    for (int u = 2; u <= n; ++u) {
+    for (int u = 2; u <= n; ++u)
+    {
         g[u].push_back(u - 1);
         g[u - 1].push_back(u);
     }

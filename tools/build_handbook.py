@@ -134,7 +134,7 @@ def verification_header():
             source = (OUT/'代码'/CODE_PATHS[key]).read_text(encoding='utf-8')
             if body not in source:
                 raise ValueError(f'Test adapter differs from actual program: {key}')
-        text += f'\nnamespace cp_{key} {{\n' + imports + body + '\n}\n'
+        text += f'\nnamespace cp_{key}\n{{\n' + imports + body + '\n}\n'
         emitted.add(key)
     for key in BY_KEY:
         if key != 'starter':

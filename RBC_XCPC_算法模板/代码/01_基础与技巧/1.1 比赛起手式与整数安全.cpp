@@ -6,13 +6,15 @@ using u64 = unsigned long long;
 #define endl '\n'
 // #define int long long
 
-void solve() {
+void solve()
+{
     // Read one test case. Arrays and vertices use 1..n.
 }
-signed main() {
+signed main()
+{
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
     int T = 1;
-    cin >> T; // Remove for a single test case.
+    cin >> T;  // Remove for a single test case.
     while (T--) solve();
 }

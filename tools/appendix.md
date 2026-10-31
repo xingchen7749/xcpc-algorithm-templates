@@ -44,12 +44,17 @@
 ## 8.3 128 位整数输出
 
 ```cpp
-string to_string_i128(i128 x) {
+string to_string_i128(i128 x)
+{
     if (x == 0) return "0";
     bool neg = x < 0;
     __uint128_t y = neg ? __uint128_t(-(x + 1)) + 1 : __uint128_t(x);
     string s;
-    while (y) { s.push_back(char('0' + y % 10)); y /= 10; }
+    while (y)
+    {
+        s.push_back(char('0' + y % 10));
+        y /= 10;
+    }
     if (neg) s.push_back('-');
     reverse(s.begin(), s.end());
     return s;

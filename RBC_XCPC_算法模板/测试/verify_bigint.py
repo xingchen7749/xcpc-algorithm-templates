@@ -11,28 +11,45 @@ from build_handbook import CODE_PATHS
 
 SOURCE = ROOT / 'RBC_XCPC_算法模板/代码' / CODE_PATHS['bigint']
 HARNESS = r"""
-int main() {
+int main()
+{
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
-    string sa,sb; int k;
-    while(cin>>sa>>sb>>k) {
-        big_int a(sa),b(sb);
-        auto output=[](const big_int& x) {
-            assert(x.size()>0);
-            assert(x.size()==1 || x.arr.back()!=0);
-            for(int v:x.arr) assert(0<=v && v<big_int::base);
-            print(x);cout<<'\n';
+    string sa, sb;
+    int k;
+    while (cin >> sa >> sb >> k)
+    {
+        big_int a(sa), b(sb);
+        auto output = [](const big_int& x)
+        {
+            assert(x.size() > 0);
+            assert(x.size() == 1 || x.arr.back() != 0);
+            for (int v : x.arr) assert(0 <= v && v < big_int::base);
+            print(x);
+            cout << '\n';
         };
-        output(a);output(b);output(big_int(k));output(big_int());
-        cout<<compare(a,b)<<'\n';
-        output(jia(a,b));
-        output(compare(a,b)>=0?jian(a,b):jian(b,a));
-        output(chen(a,b));output(chen(a,k));
-        if(!b.is_zero()) {
-            auto [q,r]=divmod(a,b);output(q);output(r);output(chu(a,b));
+        output(a);
+        output(b);
+        output(big_int(k));
+        output(big_int());
+        cout << compare(a, b) << '\n';
+        output(jia(a, b));
+        output(compare(a, b) >= 0 ? jian(a, b) : jian(b, a));
+        output(chen(a, b));
+        output(chen(a, k));
+        if (!b.is_zero())
+        {
+            auto [q, r] = divmod(a, b);
+            output(q);
+            output(r);
+            output(chu(a, b));
         }
-        if(k>0) {
-            auto [q,r]=divmod(a,k);output(q);cout<<r<<'\n';output(chu(a,k));
+        if (k > 0)
+        {
+            auto [q, r] = divmod(a, k);
+            output(q);
+            cout << r << '\n';
+            output(chu(a, k));
         }
     }
 }

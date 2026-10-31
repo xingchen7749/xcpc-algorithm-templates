@@ -10,19 +10,24 @@ using u64 = unsigned long long;
 // 要求 N>=0、每个动作 d>0；返回 sg[0]=0 的数组，时间 O(N*(|moves|+1))。
 // SG（Sprague–Grundy）：斯普拉格–格兰迪函数。
 // mex（minimum excluded value）：集合中未出现的最小非负整数。
-vector<int> subtraction_sg(int N, const vector<int>& moves) {
+vector<int> subtraction_sg(int N, const vector<int>& moves)
+{
     int K = moves.size();
     // sg[x]：剩余 x 时的 SG 值；seen[v]：SG 值 v 最近在哪个状态的后继中出现。
     vector<int> sg(N + 1), seen(K + 1, -1);
-    for (int x = 1; x <= N; ++x) {
-        for (int d : moves) {
+    for (int x = 1; x <= N; ++x)
+    {
+        for (int d : moves)
+        {
             assert(d > 0);
-            if (d <= x && sg[x - d] <= K) {
+            if (d <= x && sg[x - d] <= K)
+            {
                 seen[sg[x - d]] = x;
             }
         }
         int g = 0;
-        while (g <= K && seen[g] == x) {
+        while (g <= K && seen[g] == x)
+        {
             ++g;
         }
         sg[x] = g;
@@ -30,13 +35,15 @@ vector<int> subtraction_sg(int N, const vector<int>& moves) {
     return sg;
 }
 
-void solve() {
+void solve()
+{
     // Read one test case. Arrays and vertices use 1..n.
 }
-signed main() {
+signed main()
+{
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
     int T = 1;
-    cin >> T; // Remove for a single test case.
+    cin >> T;  // Remove for a single test case.
     while (T--) solve();
 }

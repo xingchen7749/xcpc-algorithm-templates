@@ -10,17 +10,22 @@ using u64 = unsigned long long;
 // 滚动数组不保存恢复方案所需的信息；时间 O(|a|*|b|)，空间 O(|b|)。
 // LCS（Longest Common Subsequence）：最长公共子序列。
 // DP（Dynamic Programming）：动态规划。
-int lcs(const string& a, const string& b) {
+int lcs(const string& a, const string& b)
+{
     // dp[j]：当前已处理的 a 前缀与 b 的前 j 个字符的 LCS 长度，原地滚动更新。
     vector<int> dp(b.size() + 1);
-    for (char x : a) {
+    for (char x : a)
+    {
         int diag = 0;
-        for (int j = 1; j <= (int)b.size(); ++j) {
+        for (int j = 1; j <= (int)b.size(); ++j)
+        {
             int old = dp[j];
-            if (x == b[j - 1]) {
+            if (x == b[j - 1])
+            {
                 dp[j] = diag + 1;
             }
-            else {
+            else
+            {
                 dp[j] = max(dp[j], dp[j - 1]);
             }
             diag = old;
@@ -29,13 +34,15 @@ int lcs(const string& a, const string& b) {
     return dp.back();
 }
 
-void solve() {
+void solve()
+{
     // Read one test case. Arrays and vertices use 1..n.
 }
-signed main() {
+signed main()
+{
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
     int T = 1;
-    cin >> T; // Remove for a single test case.
+    cin >> T;  // Remove for a single test case.
     while (T--) solve();
 }

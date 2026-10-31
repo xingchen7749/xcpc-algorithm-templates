@@ -5,7 +5,8 @@ import tempfile
 
 SOURCE = Path(__file__).resolve().parents[1] / '代码/04_字符串/4.5 普通字典树.cpp'
 TEST = r'''
-int main() {
+int main()
+{
     Trie trie;
     assert(trie.count("") == 0 && trie.prefix_count("") == 0);
     trie.insert("apple");
@@ -25,24 +26,29 @@ int main() {
 
     mt19937 rng(20261023);
     vector<string> a;
-    for (int step = 0; step < 20000; step++) {
+    for (int step = 0; step < 20000; step++)
+    {
         string s;
         int len = rng() % 15;
         for (int i = 0; i < len; i++) s += char('a' + rng() % 26);
-        if (!a.empty() && rng() % 2 == 0) {
+        if (!a.empty() && rng() % 2 == 0)
+        {
             s = a[rng() % a.size()];
             if (rng() % 2 == 0) s.resize(rng() % (s.size() + 1));
         }
-        if (step % 997 == 0) {
+        if (step % 997 == 0)
+        {
             trie.clear();
             a.clear();
         }
-        else if (rng() % 3 == 0) {
+        else if (rng() % 3 == 0)
+        {
             trie.insert(s);
             a.push_back(s);
         }
         int exact = 0, prefix = 0;
-        for (const string &t : a) {
+        for (const string& t : a)
+        {
             exact += t == s;
             prefix += t.compare(0, s.size(), s) == 0;
         }

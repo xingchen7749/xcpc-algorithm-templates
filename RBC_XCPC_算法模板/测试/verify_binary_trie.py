@@ -5,7 +5,8 @@ import tempfile
 
 SOURCE = Path(__file__).resolve().parents[1] / '代码/02_数据结构/2.10 01 Trie：二进制字典树.cpp'
 TEST = r'''
-int main() {
+int main()
+{
     BinaryTrie edge;
     u64 high = 1ULL << 63, full = ~0ULL;
     edge.insert(0);
@@ -23,32 +24,39 @@ int main() {
     assert(edge.size() == 0 && edge.count(full) == 0);
 
     mt19937_64 rng(20261016);
-    for (int bits : {0, 1, 5, 30, 62, 63}) {
+    for (int bits : {0, 1, 5, 30, 62, 63})
+    {
         BinaryTrie trie(bits);
         multiset<u64> a;
         u64 mask = bits == 63 ? ~0ULL : (1ULL << (bits + 1)) - 1;
-        for (int step = 0; step < 12000; step++) {
+        for (int step = 0; step < 12000; step++)
+        {
             u64 x = rng() & mask;
             int op = rng() % 6;
-            if (op == 0 || op == 1) {
+            if (op == 0 || op == 1)
+            {
                 trie.insert(x);
                 a.insert(x);
             }
-            else if (op == 2) {
+            else if (op == 2)
+            {
                 if (!a.empty() && (rng() & 1)) x = *a.begin();
                 auto it = a.find(x);
                 assert(trie.erase(x) == (it != a.end()));
                 if (it != a.end()) a.erase(it);
             }
-            else if (op == 3) {
+            else if (op == 3)
+            {
                 assert(trie.count(x) == (int)a.count(x));
             }
-            else if (op == 4 && !a.empty()) {
+            else if (op == 4 && !a.empty())
+            {
                 u64 ans = 0;
                 for (u64 y : a) ans = max(ans, x ^ y);
                 assert(trie.max_xor(x) == ans);
             }
-            else if (op == 5 && step % 101 == 0) {
+            else if (op == 5 && step % 101 == 0)
+            {
                 trie.clear();
                 a.clear();
             }
