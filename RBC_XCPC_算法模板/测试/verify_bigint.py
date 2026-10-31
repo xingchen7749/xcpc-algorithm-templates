@@ -16,7 +16,7 @@ int main()
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
     string sa, sb;
-    int k;
+    i64 k;
     while (cin >> sa >> sb >> k)
     {
         big_int a(sa), b(sb);
@@ -24,6 +24,8 @@ int main()
         {
             assert(x.size() > 0);
             assert(x.size() == 1 || x.arr.back() != 0);
+            assert(x.sign == 1 || x.sign == -1);
+            assert(!x.is_zero() || x.sign == 1);
             for (int v : x.arr) assert(0 <= v && v < big_int::base);
             print(x);
             cout << '\n';
@@ -33,27 +35,45 @@ int main()
         output(big_int(k));
         output(big_int());
         cout << compare(a, b) << '\n';
-        output(jia(a, b));
-        output(compare(a, b) >= 0 ? jian(a, b) : jian(b, a));
-        output(chen(a, b));
-        output(chen(a, k));
+        output(a + b);
+        output(a - b);
+        output(a * b);
+        output(a * k);
+        output(-a);
+        output(k * a);
+        output(k + a);
+        output(k - a);
+        cout << (a < b) << '\n' << (a > b) << '\n'
+             << (a <= b) << '\n' << (a >= b) << '\n'
+             << (a == b) << '\n' << (a != b) << '\n';
         if (!b.is_zero())
         {
             auto [q, r] = divmod(a, b);
             output(q);
             output(r);
-            output(chu(a, b));
+            output(a / b);
+            output(a % b);
+            assert(b * q + r == a);
+            assert(compare_abs(r, b) < 0);
         }
-        if (k > 0)
+        if (k != 0)
         {
             auto [q, r] = divmod(a, k);
             output(q);
-            cout << r << '\n';
-            output(chu(a, k));
+            output(r);
+            output(a / k);
+            output(a % k);
         }
     }
 }
 """
+
+def trunc_divmod(a, b):
+    q = abs(a) // abs(b)
+    if (a < 0) != (b < 0):
+        q = -q
+    return q, a - b * q
+
 
 def main():
     rng=random.Random(20261010)
@@ -64,12 +84,23 @@ def main():
         b=rng.randrange(10**rng.randrange(1,201))
         cases.append(('000'+str(a),'000'+str(b),rng.randrange(2**31)))
     cases.extend([('9'*1000,'1',2**31-1),('1'+'0'*1000,'9'*500,0),('0000','0000',0)])
+    # Exercise every sign combination, signed zero, and the full i64 boundary.
+    original = cases[:]
+    cases.extend(('-'+a,b,-k) for a,b,k in original)
+    cases.extend((a,'-'+b,-k) for a,b,k in original)
+    cases.extend(('-'+a,'-'+b,k) for a,b,k in original)
+    cases.extend([('+0000','-0000',-(2**63)),
+                  ('-17','+5',2**63-1), ('+17','-5',-(2**63)),
+                  (str(-(2**63)), '-1', -(2**63)),
+                  ('-1', str(-(2**63)), 2**63-1)])
     expected=[]
     for sa,sb,k in cases:
         a,b=int(sa),int(sb)
-        expected.extend(map(str,[a,b,k,0,(a>b)-(a<b),a+b,abs(a-b),a*b,a*k]))
-        if b: expected.extend(map(str,[a//b,a%b,a//b]))
-        if k: expected.extend(map(str,[a//k,a%k,a//k]))
+        expected.extend(map(str,[a,b,k,0,(a>b)-(a<b),a+b,a-b,a*b,a*k,
+                                 -a,k*a,k+a,k-a]))
+        expected.extend(str(int(v)) for v in [a<b,a>b,a<=b,a>=b,a==b,a!=b])
+        if b: expected.extend(map(str,trunc_divmod(a,b)*2))
+        if k: expected.extend(map(str,trunc_divmod(a,k)*2))
     data=''.join(f'{a} {b} {k}\n' for a,b,k in cases)
     source=SOURCE.read_text(encoding='utf-8')
     with tempfile.TemporaryDirectory(prefix='verify_bigint_') as directory:
